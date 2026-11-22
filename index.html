@@ -128,21 +128,33 @@
 
   <!-- ヘッダーナビゲーション -->
   <header class="fixed top-0 left-0 right-0 z-30 pointer-events-none p-3 sm:p-4">
-    <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2">
-      <!-- 美術館タイトル & 接続ステータス -->
-      <div class="glass-panel pointer-events-auto rounded-2xl px-4 py-2.5 shadow-sm flex items-center gap-3">
-        <div class="w-2.5 h-2.5 rounded-full bg-neutral-900 transition-colors duration-300 shrink-0" id="brand-dot"></div>
-        <div class="min-w-0">
-          <div class="flex items-center gap-2">
-            <h1 id="header-exhibition-title" class="font-serif text-base sm:text-lg tracking-widest font-semibold leading-none truncate">MUSEUM OF FORMS</h1>
-            <span id="admin-mode-badge" class="hidden px-2 py-0.5 rounded-md bg-amber-500/15 text-amber-700 border border-amber-500/30 text-[10px] font-semibold tracking-wider shrink-0">管理者モード</span>
+    <div class="max-w-7xl mx-auto flex flex-wrap items-start justify-between gap-2">
+      <!-- 左側：美術館タイトル & 控えめな操作ヒント（左端揃え） -->
+      <div class="flex flex-col items-start gap-2.5 max-w-full">
+        <!-- 美術館タイトル & 接続ステータス -->
+        <div class="glass-panel pointer-events-auto rounded-2xl px-4 py-2.5 shadow-sm flex items-center gap-3 max-w-full">
+          <div class="w-2.5 h-2.5 rounded-full bg-neutral-900 transition-colors duration-300 shrink-0" id="brand-dot"></div>
+          <div class="min-w-0">
+            <div class="flex items-center gap-2">
+              <h1 id="header-exhibition-title" class="font-serif text-base sm:text-lg tracking-widest font-semibold leading-none truncate">MUSEUM OF FORMS</h1>
+              <span id="admin-mode-badge" class="hidden px-2 py-0.5 rounded-md bg-amber-500/15 text-amber-700 border border-amber-500/30 text-[10px] font-semibold tracking-wider shrink-0">管理者モード</span>
+            </div>
+            <div class="flex items-center gap-2 mt-0.5">
+              <p id="header-exhibition-subtitle" class="text-[10px] tracking-wider opacity-60 truncate">VIRTUAL EXHIBITION ARCHIVE</p>
+              <span id="sync-status-badge" class="inline-flex items-center gap-1 text-[9px] opacity-65 shrink-0" title="クラウド同期ステータス">
+                <span id="sync-status-dot" class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                <span id="sync-status-text">LIVE</span>
+              </span>
+            </div>
           </div>
-          <div class="flex items-center gap-2 mt-0.5">
-            <p id="header-exhibition-subtitle" class="text-[10px] tracking-wider opacity-60 truncate">VIRTUAL EXHIBITION ARCHIVE</p>
-            <span id="sync-status-badge" class="inline-flex items-center gap-1 text-[9px] opacity-65 shrink-0" title="クラウド同期ステータス">
-              <span id="sync-status-dot" class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-              <span id="sync-status-text">LIVE</span>
-            </span>
+        </div>
+
+        <!-- 左上の控えめな操作ヒント（3Dモード時のみ表示・タイトルと左位置揃え） -->
+        <div id="hud-hints" class="pointer-events-none hidden md:block">
+          <div class="glass-panel rounded-2xl px-3.5 py-2.5 text-[11px] leading-relaxed opacity-85 shadow-sm space-y-1">
+            <div class="flex items-center gap-2"><span class="font-semibold w-16 opacity-70">視点回転</span><span>マウスドラッグ</span></div>
+            <div class="flex items-center gap-2"><span class="font-semibold w-16 opacity-70">歩行移動</span><span>W A S D / 矢印キー</span></div>
+            <div class="flex items-center gap-2"><span class="font-semibold w-16 opacity-70">作品鑑賞</span><span>作品をクリック</span></div>
           </div>
         </div>
       </div>
@@ -181,20 +193,20 @@
           <span class="hidden sm:inline">展覧会を共有</span>
         </button>
 
-        <!-- 管理者専用：作品展示・管理ボタン（通常鑑賞者には非表示） -->
+        <!-- 管理者・出展者専用：作品展示・管理ボタン（通常鑑賞者には非表示） -->
         <button id="btn-admin-curate" onclick="openCurateModal()" class="hidden rounded-2xl px-3.5 py-2 text-xs font-medium bg-neutral-900 text-white hover:bg-neutral-700 transition-all shadow-sm items-center gap-1.5">
           <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
           <span>展示・管理</span>
         </button>
 
         <!-- 管理者専用：ログアウトボタン -->
-        <button id="btn-admin-logout" onclick="logoutAdmin()" class="hidden glass-panel rounded-2xl px-3 py-2 text-xs font-medium text-rose-600 hover:bg-rose-50 transition-all shadow-sm items-center gap-1" title="管理者ログアウト">
+        <button id="btn-admin-logout" onclick="logoutAdmin()" class="hidden glass-panel rounded-2xl px-3 py-2 text-xs font-medium text-rose-600 hover:bg-rose-50 transition-all shadow-sm items-center gap-1" title="ログアウト">
           <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
           <span class="hidden md:inline">ログアウト</span>
         </button>
 
-        <!-- 控えめな鍵アイコン（管理者ログイン入口） -->
-        <button id="btn-admin-login" onclick="openAdminLoginModal()" class="glass-panel rounded-2xl w-8 h-8 flex items-center justify-center opacity-70 hover:opacity-100 transition-all shadow-sm" title="管理者ログイン (Admin)" aria-label="管理者ログイン">
+        <!-- 控えめな鍵アイコン（管理者・出展者ログイン入口） -->
+        <button id="btn-admin-login" onclick="openAdminLoginModal()" class="glass-panel rounded-2xl w-8 h-8 flex items-center justify-center opacity-70 hover:opacity-100 transition-all shadow-sm" title="管理者・出展者ログイン" aria-label="管理者・出展者ログイン">
           <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
         </button>
 
@@ -205,15 +217,6 @@
       </div>
     </div>
   </header>
-
-  <!-- 左上の控えめな操作ヒント（3Dモード時のみ表示） -->
-  <div id="hud-hints" class="fixed top-20 left-4 z-20 pointer-events-none hidden md:block">
-    <div class="glass-panel rounded-2xl px-3.5 py-2.5 text-[11px] leading-relaxed opacity-85 shadow-sm space-y-1">
-      <div class="flex items-center gap-2"><span class="font-semibold w-16 opacity-70">視点回転</span><span>マウスドラッグ</span></div>
-      <div class="flex items-center gap-2"><span class="font-semibold w-16 opacity-70">歩行移動</span><span>W A S D / 矢印キー</span></div>
-      <div class="flex items-center gap-2"><span class="font-semibold w-16 opacity-70">作品鑑賞</span><span>作品をクリック</span></div>
-    </div>
-  </div>
 
   <!-- 作品ホバーツールチップ（3D空間で作品にカーソルを合わせたとき） -->
   <div id="hover-tooltip" class="fixed z-20 pointer-events-none hidden transition-opacity duration-150">
@@ -265,7 +268,7 @@
           <h2 class="font-serif text-2xl sm:text-3xl font-semibold mt-1">展示作品一覧</h2>
         </div>
         <div class="text-xs text-neutral-500 flex items-center gap-4">
-          <span id="catalog-count">全 8 作品展示中</span>
+          <span id="catalog-count">全 10 作品展示中</span>
           <button id="btn-catalog-curate" onclick="openCurateModal()" class="hidden text-neutral-900 underline underline-offset-4 font-medium hover:opacity-70">＋ 展示を管理する</button>
         </div>
       </div>
@@ -386,7 +389,7 @@
       <!-- ヘッダー -->
       <div class="px-6 py-4 border-b border-neutral-200 flex items-center justify-between shrink-0">
         <div>
-          <p class="text-[10px] tracking-widest uppercase text-neutral-400">CURATION STUDIO</p>
+          <p id="curate-modal-role-label" class="text-[10px] tracking-widest uppercase text-neutral-400">CURATION STUDIO</p>
           <h3 class="text-lg font-semibold">作品展示・キュレーション管理</h3>
         </div>
         <button onclick="closeCurateModal()" class="w-8 h-8 rounded-full hover:bg-neutral-100 flex items-center justify-center text-neutral-500 hover:text-neutral-900" aria-label="閉じる">
@@ -403,7 +406,7 @@
           展示スロット一覧
         </button>
         <button id="tab-btn-settings" onclick="switchCurateTab('settings')" class="pb-3 border-b-2 border-transparent text-neutral-400 hover:text-neutral-700 transition-colors whitespace-nowrap">
-          展覧会・管理者設定
+          展覧会・アカウント管理
         </button>
       </div>
 
@@ -499,8 +502,8 @@
       <!-- タブ2：スロット管理一覧 -->
       <div id="curate-tab-manage" class="p-6 overflow-y-auto custom-scroll flex-1 hidden space-y-4">
         <div class="flex flex-wrap items-center justify-between gap-2 bg-neutral-50 p-3.5 rounded-2xl border border-neutral-200/70">
-          <p class="text-xs text-neutral-600">全8スロットの公開状態・展示内容を確認、編集、撤去できます。</p>
-          <button onclick="requestResetGallery()" class="px-3 py-1.5 rounded-xl text-xs font-medium text-rose-600 bg-rose-50 hover:bg-rose-100 transition-colors">
+          <p id="manage-slot-hint" class="text-xs text-neutral-600">全10スロットの公開状態・展示内容を確認、編集、撤去できます。</p>
+          <button id="btn-reset-gallery" onclick="requestResetGallery()" class="px-3 py-1.5 rounded-xl text-xs font-medium text-rose-600 bg-rose-50 hover:bg-rose-100 transition-colors">
             初期展示状態にリセット
           </button>
         </div>
@@ -510,7 +513,7 @@
         </div>
       </div>
 
-      <!-- タブ3：展覧会・管理者設定 -->
+      <!-- タブ3：展覧会・アカウント管理設定 -->
       <div id="curate-tab-settings" class="p-6 overflow-y-auto custom-scroll flex-1 hidden space-y-6">
         <!-- 展覧会タイトル設定 -->
         <form onsubmit="saveExhibitionSettings(event)" class="space-y-4 bg-neutral-50 p-5 rounded-2xl border border-neutral-200/70">
@@ -535,16 +538,16 @@
           </div>
         </form>
 
-        <!-- 管理者ID・パスワード変更 -->
+        <!-- オーナー（マスター管理者）ID・パスワード変更 -->
         <form onsubmit="saveAdminCredentials(event)" class="space-y-4 bg-neutral-50 p-5 rounded-2xl border border-neutral-200/70">
           <div>
-            <h4 class="text-sm font-semibold text-neutral-900">管理者ID・パスワードの変更</h4>
-            <p class="text-[11px] text-neutral-500 mt-0.5">パスワードはSHA-256でハッシュ化され、クラウドデータベースに安全に保存されます。</p>
+            <h4 class="text-sm font-semibold text-neutral-900">マスター管理者（オーナー）のID・パスワード変更</h4>
+            <p class="text-[11px] text-neutral-500 mt-0.5">全スロットの編集・撤去・メンバー発行ができる最上位アカウントです。</p>
           </div>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label for="setting-admin-id" class="block text-xs font-semibold text-neutral-700 mb-1">新しい管理者ID</label>
-              <input id="setting-admin-id" type="text" required minlength="3" maxlength="30" class="w-full text-xs bg-white border border-neutral-300 rounded-xl px-3 py-2.5 focus:outline-none focus:border-neutral-900">
+              <label for="setting-admin-id" class="block text-xs font-semibold text-neutral-700 mb-1">マスター管理者ID（半角英数字・_-）</label>
+              <input id="setting-admin-id" type="text" required minlength="3" maxlength="30" pattern="[A-Za-z0-9_-]+" class="w-full text-xs bg-white border border-neutral-300 rounded-xl px-3 py-2.5 focus:outline-none focus:border-neutral-900">
             </div>
             <div>
               <label for="setting-admin-pw" class="block text-xs font-semibold text-neutral-700 mb-1">新しいパスワード（6文字以上）</label>
@@ -553,21 +556,68 @@
           </div>
           <div class="flex justify-end">
             <button type="submit" class="px-5 py-2 rounded-xl text-xs font-medium bg-amber-600 text-white hover:bg-amber-700 transition-colors">
-              管理者認証情報を更新
+              マスター認証情報を更新
             </button>
           </div>
         </form>
+
+        <!-- 複数アカウント管理（出展作家・共同スタッフ用ID/PW発行） -->
+        <div class="space-y-4 bg-neutral-50 p-5 rounded-2xl border border-neutral-200/70">
+          <div>
+            <div class="flex items-center justify-between gap-2">
+              <h4 class="text-sm font-semibold text-neutral-900">出展者・共同スタッフのアカウント管理（複数ID/PW発行）</h4>
+              <span id="member-count-badge" class="text-[10px] font-semibold bg-neutral-200 text-neutral-700 px-2 py-0.5 rounded-full">0名登録中</span>
+            </div>
+            <p class="text-[11px] text-neutral-500 mt-0.5">出展作家やスタッフごとに専用のログインID・パスワードを発行し、各自で作品を展示・管理してもらえます。<br>※「出展者」に展示してもらう場合は、「展示スロット一覧」から事前に空き枠を用意してください。</p>
+          </div>
+
+          <!-- 新規メンバー追加フォーム -->
+          <form onsubmit="addMemberAccount(event)" class="bg-white p-4 rounded-xl border border-neutral-200 space-y-3">
+            <p class="text-xs font-semibold text-neutral-800">＋ 新しい出展者・スタッフIDを発行する</p>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label for="member-name" class="block text-[11px] font-semibold text-neutral-600 mb-1">表示名（作家名・スタッフ名） <span class="text-rose-500">*</span></label>
+                <input id="member-name" type="text" required maxlength="30" placeholder="例：出展作家 佐藤" class="w-full text-xs border border-neutral-300 rounded-lg px-3 py-2 focus:outline-none focus:border-neutral-900">
+              </div>
+              <div>
+                <label for="member-role" class="block text-[11px] font-semibold text-neutral-600 mb-1">編集権限ルール</label>
+                <select id="member-role" class="w-full text-xs border border-neutral-300 rounded-lg px-3 py-2 bg-white focus:outline-none focus:border-neutral-900">
+                  <option value="exhibitor">出展者（空き枠と自分の作品のみ編集可）</option>
+                  <option value="curator">共同キュレーター（全スロット編集可）</option>
+                </select>
+              </div>
+              <div>
+                <label for="member-id" class="block text-[11px] font-semibold text-neutral-600 mb-1">ログインID（半角英数字・_- のみ） <span class="text-rose-500">*</span></label>
+                <input id="member-id" type="text" required minlength="3" maxlength="30" pattern="[A-Za-z0-9_-]+" placeholder="例：artist01" class="w-full text-xs border border-neutral-300 rounded-lg px-3 py-2 focus:outline-none focus:border-neutral-900">
+              </div>
+              <div>
+                <label for="member-pw" class="block text-[11px] font-semibold text-neutral-600 mb-1">ログインパスワード（4文字以上） <span class="text-rose-500">*</span></label>
+                <input id="member-pw" type="text" required minlength="4" maxlength="64" placeholder="例：art2026" class="w-full text-xs border border-neutral-300 rounded-lg px-3 py-2 focus:outline-none focus:border-neutral-900">
+              </div>
+            </div>
+            <div class="flex justify-end pt-1">
+              <button type="submit" class="px-4 py-2 rounded-lg text-xs font-medium bg-neutral-900 text-white hover:bg-neutral-700 transition-colors">
+                アカウントを発行して保存
+              </button>
+            </div>
+          </form>
+
+          <!-- 発行済みメンバー一覧 -->
+          <div id="member-accounts-list" class="space-y-2">
+            <!-- JSで描画 -->
+          </div>
+        </div>
       </div>
     </div>
   </div>
 
-  <!-- 管理者ログインモーダル -->
+  <!-- 管理者・出展者ログインモーダル -->
   <div id="admin-login-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
     <div class="bg-white text-neutral-900 rounded-3xl shadow-2xl max-w-sm w-full p-6 sm:p-7 animate-fade-in">
       <div class="flex items-center justify-between mb-4">
         <div>
-          <p class="text-[10px] tracking-widest uppercase text-neutral-400">ADMINISTRATOR ACCESS</p>
-          <h3 class="text-lg font-semibold mt-0.5">管理者ログイン</h3>
+          <p class="text-[10px] tracking-widest uppercase text-neutral-400">CURATOR & EXHIBITOR ACCESS</p>
+          <h3 class="text-lg font-semibold mt-0.5">管理者・出展者ログイン</h3>
         </div>
         <button onclick="closeAdminLoginModal()" class="w-8 h-8 rounded-full hover:bg-neutral-100 flex items-center justify-center text-neutral-500" aria-label="閉じる">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
@@ -576,8 +626,8 @@
 
       <form id="admin-login-form" onsubmit="handleAdminLogin(event)" class="space-y-4">
         <div>
-          <label for="login-id" class="block text-xs font-semibold text-neutral-700 mb-1">管理者ID</label>
-          <input id="login-id" type="text" required autocomplete="username" placeholder="admin" class="w-full text-xs border border-neutral-300 rounded-xl px-3.5 py-2.5 focus:outline-none focus:border-neutral-900">
+          <label for="login-id" class="block text-xs font-semibold text-neutral-700 mb-1">ログインID（管理者 または 発行されたID）</label>
+          <input id="login-id" type="text" required autocomplete="username" placeholder="admin / artist01" class="w-full text-xs border border-neutral-300 rounded-xl px-3.5 py-2.5 focus:outline-none focus:border-neutral-900">
         </div>
         <div>
           <label for="login-pw" class="block text-xs font-semibold text-neutral-700 mb-1">パスワード</label>
@@ -586,13 +636,13 @@
         <p id="login-error-msg" class="hidden text-xs text-rose-600 font-medium"></p>
 
         <div class="bg-neutral-50 rounded-xl p-3 border border-neutral-200/70 text-[11px] text-neutral-500 leading-relaxed">
-          <span class="font-semibold text-neutral-700">初回ログイン用デフォルト情報:</span><br>
+          <span class="font-semibold text-neutral-700">初回マスター管理者アカウント:</span><br>
           ID: <code class="bg-neutral-200/70 px-1.5 py-0.5 rounded text-neutral-800">admin</code> / PW: <code class="bg-neutral-200/70 px-1.5 py-0.5 rounded text-neutral-800">gallery2026</code><br>
-          <span class="text-[10px] opacity-80">※ ログイン後の「管理設定」から変更できます。</span>
+          <span class="text-[10px] opacity-80">※ ログイン後の「アカウント管理」からパスワード変更や複数人IDの追加ができます。</span>
         </div>
 
         <button type="submit" class="w-full py-2.5 rounded-xl bg-neutral-900 text-white text-xs font-medium hover:bg-neutral-700 transition-colors shadow-sm">
-          管理者としてログイン
+          ログインする
         </button>
       </form>
     </div>
@@ -626,7 +676,7 @@
           <span class="w-6 h-6 rounded-lg bg-neutral-900 text-white flex items-center justify-center shrink-0 text-[11px] font-semibold">3</span>
           <div>
             <p class="font-semibold text-neutral-800">リアルタイム展示＆共有</p>
-            <p class="text-neutral-500 mt-0.5">管理者が鍵アイコンからログインして作品を公開すると、全鑑賞者の画面へ即座に反映されます。</p>
+            <p class="text-neutral-500 mt-0.5">管理者や出展者が鍵アイコンからログインして作品を公開すると、全鑑賞者の画面へ即座に反映されます。</p>
           </div>
         </div>
       </div>
@@ -694,23 +744,25 @@
     let firebaseUser = null;
     let isCloudConnected = false;
 
-    // 初期管理者ID・パスワード（初回シード用）
+    // 初期マスター管理者ID・パスワード（初回シード用）
     const DEFAULT_ADMIN_ID = 'admin';
     const DEFAULT_ADMIN_PW = 'gallery2026';
 
     // 展示室の寸法 (幅18m x 奥行24m x 高さ5.2m)
     const ROOM = { width: 18, depth: 24, height: 5.2 };
 
-    // 全8か所の展示スロット定義
+    // 全10か所の展示スロット定義（四方の壁すべてに対応）
     const SLOTS_CONFIG = [
-      { id: 0, label: 'SLOT 01 — 左壁・手前', pos: [-8.92, 2.05, 6.2],  rotY: Math.PI / 2,  normal: [1, 0, 0] },
-      { id: 1, label: 'SLOT 02 — 左壁・中央', pos: [-8.92, 2.05, 0.0],  rotY: Math.PI / 2,  normal: [1, 0, 0] },
-      { id: 2, label: 'SLOT 03 — 左壁・奥',   pos: [-8.92, 2.05, -6.2], rotY: Math.PI / 2,  normal: [1, 0, 0] },
-      { id: 3, label: 'SLOT 04 — 正面壁・左', pos: [-3.6,  2.05, -11.92], rotY: 0,          normal: [0, 0, 1] },
-      { id: 4, label: 'SLOT 05 — 正面壁・右', pos: [3.6,   2.05, -11.92], rotY: 0,          normal: [0, 0, 1] },
-      { id: 5, label: 'SLOT 06 — 右壁・奥',   pos: [8.92,  2.05, -6.2], rotY: -Math.PI / 2, normal: [-1, 0, 0] },
-      { id: 6, label: 'SLOT 07 — 右壁・中央', pos: [8.92,  2.05, 0.0],  rotY: -Math.PI / 2, normal: [-1, 0, 0] },
-      { id: 7, label: 'SLOT 08 — 右壁・手前', pos: [8.92,  2.05, 6.2],  rotY: -Math.PI / 2, normal: [-1, 0, 0] }
+      { id: 0, label: 'SLOT 01 — 左壁・手前',   pos: [-8.92, 2.05, 6.2],    rotY: Math.PI / 2,  normal: [1, 0, 0] },
+      { id: 1, label: 'SLOT 02 — 左壁・中央',   pos: [-8.92, 2.05, 0.0],    rotY: Math.PI / 2,  normal: [1, 0, 0] },
+      { id: 2, label: 'SLOT 03 — 左壁・奥',     pos: [-8.92, 2.05, -6.2],   rotY: Math.PI / 2,  normal: [1, 0, 0] },
+      { id: 3, label: 'SLOT 04 — 正面壁・左',   pos: [-3.6,  2.05, -11.92], rotY: 0,            normal: [0, 0, 1] },
+      { id: 4, label: 'SLOT 05 — 正面壁・右',   pos: [3.6,   2.05, -11.92], rotY: 0,            normal: [0, 0, 1] },
+      { id: 5, label: 'SLOT 06 — 右壁・奥',     pos: [8.92,  2.05, -6.2],   rotY: -Math.PI / 2, normal: [-1, 0, 0] },
+      { id: 6, label: 'SLOT 07 — 右壁・中央',   pos: [8.92,  2.05, 0.0],    rotY: -Math.PI / 2, normal: [-1, 0, 0] },
+      { id: 7, label: 'SLOT 08 — 右壁・手前',   pos: [8.92,  2.05, 6.2],    rotY: -Math.PI / 2, normal: [-1, 0, 0] },
+      { id: 8, label: 'SLOT 09 — 手前壁・右',   pos: [3.6,   2.05, 11.92],  rotY: Math.PI,      normal: [0, 0, -1] },
+      { id: 9, label: 'SLOT 10 — 手前壁・左',   pos: [-3.6,  2.05, 11.92],  rotY: Math.PI,      normal: [0, 0, -1] }
     ];
 
     const FRAME_LABELS = {
@@ -719,6 +771,10 @@
       white: 'ホワイト',
       none: 'フレームなし'
     };
+
+    function formatSlotNum(slotId) {
+      return String(slotId + 1).padStart(2, '0');
+    }
 
     // アプリケーション状態
     let artworks = new Array(SLOTS_CONFIG.length).fill(null); // 全スロットデータ（公開＋下書き含む）
@@ -730,13 +786,17 @@
       title: 'MUSEUM OF FORMS',
       subtitle: 'VIRTUAL EXHIBITION ARCHIVE',
       adminId: DEFAULT_ADMIN_ID,
-      adminPwHash: null
+      adminPwHash: null,
+      members: [] // [{ id, name, pwHash, role: 'exhibitor' | 'curator', createdAt }]
     };
 
-    let isAdmin = false;             // 管理者ログイン状態
+    // 現在ログイン中のアカウント情報（null = 一般鑑賞者）
+    // { id: string, name: string, role: 'owner' | 'curator' | 'exhibitor' }
+    let currentUser = null;
+
     let currentViewMode = '3d';      // '3d' | '2d'
     let currentTheme = 'white';      // 'white' | 'night' | 'cyber'
-    let focusedSlotIndex = -1;       // -1 = 全体見渡し、0..7 = 作品スロット
+    let focusedSlotIndex = -1;       // -1 = 全体見渡し、0..9 = 作品スロット
     let activeDetailSlot = null;     // 詳細モーダルで開いているスロットID
     let pendingUploadDataUrl = null; // 展示フォームで選択中の画像DataURL
 
@@ -750,7 +810,7 @@
 
     // カメラ制御＆補間状態
     const camState = {
-      pos: new THREE.Vector3(0, 1.65, 9.2),
+      pos: new THREE.Vector3(0, 1.65, 8.6),
       yaw: 0,
       pitch: -0.02,
       targetYaw: 0,
@@ -769,8 +829,36 @@
     const mouseNDC = new THREE.Vector2(-99, -99);
 
     /* ==========================================================================
-       2. SHA-256 ハッシュ計算ユーティリティ
+       2. 権限判定ヘルパー & SHA-256 ハッシュ計算
     ========================================================================== */
+    function isLoggedIn() {
+      return currentUser !== null;
+    }
+
+    function isOwner() {
+      return currentUser && currentUser.role === 'owner';
+    }
+
+    // 指定スロットを現在のログインユーザーが編集・撤去できるか判定
+    function canEditSlot(slotId) {
+      if (!currentUser) return false;
+      if (currentUser.role === 'owner' || currentUser.role === 'curator') return true;
+      // exhibitor（出展者）の場合：空きスロット、または自分が設置した作品のみ編集可能
+      const art = artworks[slotId];
+      if (!art) return true;
+      return art.ownerId === currentUser.id;
+    }
+
+    // 現在のロール（鑑賞者 or ログイン済み管理者/出展者）で表示すべき作品か判定
+    function isArtworkVisibleToCurrentUser(art) {
+      if (!art) return false;
+      if (art.published !== false) return true; // 公開作品は全員に表示
+      if (!currentUser) return false;
+      if (currentUser.role === 'owner' || currentUser.role === 'curator') return true;
+      // 出展者は自分の下書き作品のみプレビュー可能
+      return art.ownerId === currentUser.id;
+    }
+
     async function sha256Hex(text) {
       try {
         const enc = new TextEncoder().encode(text);
@@ -790,7 +878,7 @@
     }
 
     /* ==========================================================================
-       3. 初期展示作品（HTML5 Canvasによるジェネレーティブ現代アート8点）
+       3. 初期展示作品（HTML5 Canvasによるジェネレーティブ現代アート10点）
     ========================================================================== */
     function generateDefaultArtworks() {
       const specs = [
@@ -1042,12 +1130,70 @@
             ctx.fillStyle = fog;
             ctx.fillRect(0, h * 0.5, w, h * 0.16);
           }
+        },
+        {
+          id: 8,
+          title: '朱の律動 / Vermilion Pulse',
+          artist: '青山 蓮 / Ren Aoyama',
+          year: '2026',
+          medium: 'シルクスクリーン、コットン紙',
+          frame: 'black',
+          description: '手前壁の空間を彩る鮮やかな朱と深い群青のコントラスト。等間隔に並ぶ弧のリズムが、展示室を振り返った瞬間に心地よい緊張感をもたらします。',
+          likes: 18,
+          draw: (ctx, w, h) => {
+            ctx.fillStyle = '#F6F2EA';
+            ctx.fillRect(0, 0, w, h);
+            ctx.fillStyle = '#182436';
+            ctx.fillRect(w * 0.12, h * 0.12, w * 0.76, h * 0.76);
+            const cols = ['#E04F33', '#F28F3B', '#F4D35E'];
+            for (let i = 0; i < 3; i++) {
+              ctx.fillStyle = cols[i];
+              ctx.beginPath();
+              ctx.arc(w * (0.34 + i * 0.16), h * (0.38 + i * 0.12), w * 0.18, 0, Math.PI * 2);
+              ctx.fill();
+            }
+            ctx.strokeStyle = '#F6F2EA';
+            ctx.lineWidth = 4;
+            for (let y = h * 0.24; y < h * 0.8; y += 44) {
+              ctx.beginPath();
+              ctx.moveTo(w * 0.18, y);
+              ctx.lineTo(w * 0.82, y);
+              ctx.stroke();
+            }
+          }
+        },
+        {
+          id: 9,
+          title: '翠の層 / Moss & Mineral',
+          artist: 'Lukas Lindqvist',
+          year: '2025',
+          medium: '鉱物顔料、リネンパネル',
+          frame: 'wood',
+          description: '北欧の静かな森と苔むした岩肌から抽出した色彩を、柔らかな水平の層として重ね合わせた作品。展示室の最後を穏やかな余韻で締めくくります。',
+          likes: 26,
+          draw: (ctx, w, h) => {
+            const g = ctx.createLinearGradient(0, 0, 0, h);
+            g.addColorStop(0, '#E8ECE6');
+            g.addColorStop(0.32, '#9FB5A2');
+            g.addColorStop(0.65, '#4A6B5D');
+            g.addColorStop(1, '#1E322B');
+            ctx.fillStyle = g;
+            ctx.fillRect(0, 0, w, h);
+            ctx.fillStyle = 'rgba(244, 240, 230, 0.32)';
+            ctx.fillRect(w * 0.14, h * 0.22, w * 0.72, h * 0.16);
+            ctx.fillStyle = 'rgba(20, 32, 26, 0.28)';
+            ctx.fillRect(w * 0.14, h * 0.54, w * 0.72, h * 0.24);
+            for (let i = 0; i < 3500; i++) {
+              ctx.fillStyle = Math.random() > 0.5 ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.03)';
+              ctx.fillRect(Math.random() * w, Math.random() * h, 3, 3);
+            }
+          }
         }
       ];
 
       return specs.map(spec => {
         const canvas = document.createElement('canvas');
-        const isLandscape = (spec.id === 3 || spec.id === 7);
+        const isLandscape = (spec.id === 3 || spec.id === 7 || spec.id === 9);
         canvas.width = isLandscape ? 960 : 760;
         canvas.height = isLandscape ? 720 : 960;
         const ctx = canvas.getContext('2d');
@@ -1069,6 +1215,8 @@
           description: spec.description,
           likes: spec.likes,
           published: true,
+          ownerId: DEFAULT_ADMIN_ID,
+          ownerName: 'マスター管理者',
           isCustomImage: false,
           customImage: null,
           aspect: canvas.width / canvas.height
@@ -1081,12 +1229,6 @@
       if (art.isCustomImage && art.customImage) return art.customImage;
       if (defaultImageCache[art.slotId]) return defaultImageCache[art.slotId].dataUrl;
       return defaultImageCache[0] ? defaultImageCache[0].dataUrl : '';
-    }
-
-    // 現在のロール（鑑賞者 or 管理者）で表示すべき作品か判定
-    function isArtworkVisibleToCurrentUser(art) {
-      if (!art) return false;
-      return isAdmin ? true : (art.published !== false);
     }
 
     /* ==========================================================================
@@ -1143,7 +1285,7 @@
         setSyncStatus('syncing', 'CONNECTING');
         document.getElementById('cloud-loading-text').textContent = '認証およびクラウドデータを確認中...';
 
-        // RULE 3: 必ず先に認証を完了させる（タイムアウト保護付き）
+        // 必ず先に認証を完了させる（タイムアウト保護付き）
         const authPromise = (typeof __initial_auth_token !== 'undefined' && __initial_auth_token)
           ? signInWithCustomToken(auth, __initial_auth_token)
           : signInAnonymously(auth);
@@ -1156,7 +1298,7 @@
         firebaseUser = cred.user;
         isCloudConnected = true;
 
-        // 初回データが空であれば初期展示8点と設定をFirestoreへ自動シード
+        // 初回データが空であれば初期展示10点と設定をFirestoreへ自動シード
         await seedInitialDataIfEmpty(defaults);
 
         // リアルタイム購読を開始
@@ -1175,7 +1317,7 @@
         } else if (errCode.includes('permission-denied')) {
           showToast('Firestoreのセキュリティルール設定を確認してください（ローカル表示中）。', 'error');
         } else {
-          showToast('ローカル展示モードで起動しました（初期作品8点を表示中）。');
+          showToast('ローカル展示モードで起動しました（初期作品10点を表示中）。');
         }
       } finally {
         hideCloudLoading();
@@ -1192,11 +1334,12 @@
             subtitle: galleryConfig.subtitle,
             adminId: DEFAULT_ADMIN_ID,
             adminPwHash: galleryConfig.adminPwHash,
+            members: [],
             initialized: true,
             updatedAt: Date.now()
           });
 
-          // 8点の初期ジェネレーティブアートを軽量ドキュメントとして保存
+          // 10点の初期ジェネレーティブアートを軽量ドキュメントとして保存
           const tasks = defaults.map(art =>
             setDoc(getPublicDocRef('gallery_artworks', `slot_${art.slotId}`), art)
           );
@@ -1211,7 +1354,7 @@
     function startRealtimeListeners() {
       if (!firebaseUser || !db) return;
 
-      // 1) 展覧会設定 & 管理者認証情報のリアルタイム購読
+      // 1) 展覧会設定 & 管理者・出展者アカウント情報のリアルタイム購読
       onSnapshot(
         getPublicDocRef('gallery_config', 'main'),
         (snap) => {
@@ -1221,7 +1364,24 @@
             galleryConfig.subtitle = data.subtitle || 'VIRTUAL EXHIBITION ARCHIVE';
             galleryConfig.adminId = data.adminId || DEFAULT_ADMIN_ID;
             if (data.adminPwHash) galleryConfig.adminPwHash = data.adminPwHash;
+            galleryConfig.members = Array.isArray(data.members) ? data.members : [];
             applyExhibitionConfigUI();
+
+            // ログイン中のメンバーが削除されていた場合は自動ログアウト
+            if (currentUser && currentUser.role !== 'owner') {
+              const found = galleryConfig.members.find(m => m.id === currentUser.id);
+              if (!found) {
+                logoutAdmin();
+              } else {
+                currentUser.name = found.name;
+                currentUser.role = found.role;
+                updateAdminRoleUI();
+              }
+            }
+
+            if (!document.getElementById('curate-modal').classList.contains('hidden')) {
+              renderMemberAccountsList();
+            }
           }
         },
         (err) => {
@@ -1230,7 +1390,7 @@
         }
       );
 
-      // 2) 全展示スロットのリアルタイム購読（RULE 2: 複雑クエリ不使用）
+      // 2) 全展示スロットのリアルタイム購読
       onSnapshot(
         getPublicColRef('gallery_artworks'),
         (snapshot) => {
@@ -1304,7 +1464,7 @@
     }
 
     /* ==========================================================================
-       5. 管理者ログイン・権限UI切替
+       5. 管理者・出展者ログイン・権限UI切替
     ========================================================================== */
     function openAdminLoginModal() {
       document.getElementById('login-error-msg').classList.add('hidden');
@@ -1329,22 +1489,44 @@
       const errEl = document.getElementById('login-error-msg');
 
       const inputHash = await sha256Hex(inputPw);
+
+      // 1) マスター管理者（オーナー）の認証チェック
       if (inputId === galleryConfig.adminId && inputHash === galleryConfig.adminPwHash) {
-        isAdmin = true;
+        currentUser = {
+          id: galleryConfig.adminId,
+          name: 'マスター管理者',
+          role: 'owner'
+        };
         closeAdminLoginModal();
         updateAdminRoleUI();
-        showToast('管理者としてログインしました。作品の設置・公開管理が可能です。');
-      } else {
-        errEl.textContent = '管理者IDまたはパスワードが正しくありません。';
-        errEl.classList.remove('hidden');
+        showToast('マスター管理者としてログインしました。全作品の設置とメンバー管理が可能です。');
+        return;
       }
+
+      // 2) 登録済みの出展者・共同キュレーターアカウントの認証チェック
+      const member = (galleryConfig.members || []).find(m => m.id === inputId && m.pwHash === inputHash);
+      if (member) {
+        currentUser = {
+          id: member.id,
+          name: member.name,
+          role: member.role || 'exhibitor'
+        };
+        closeAdminLoginModal();
+        updateAdminRoleUI();
+        const roleText = currentUser.role === 'curator' ? '共同キュレーター' : '出展者';
+        showToast(`${currentUser.name}（${roleText}）としてログインしました。`);
+        return;
+      }
+
+      errEl.textContent = 'ログインIDまたはパスワードが正しくありません。';
+      errEl.classList.remove('hidden');
     }
 
     function logoutAdmin() {
-      isAdmin = false;
+      currentUser = null;
       closeCurateModal();
       updateAdminRoleUI();
-      showToast('管理者からログアウトし、鑑賞者モードに戻りました。');
+      showToast('ログアウトし、鑑賞者モードに戻りました。');
     }
 
     function updateAdminRoleUI() {
@@ -1353,8 +1535,16 @@
       const btnLogout = document.getElementById('btn-admin-logout');
       const btnLogin = document.getElementById('btn-admin-login');
       const btnCatalogCurate = document.getElementById('btn-catalog-curate');
+      const tabSettingsBtn = document.getElementById('tab-btn-settings');
+      const resetBtn = document.getElementById('btn-reset-gallery');
+      const roleLabel = document.getElementById('curate-modal-role-label');
 
-      if (isAdmin) {
+      if (isLoggedIn()) {
+        const roleLabelText = currentUser.role === 'owner'
+          ? '管理者モード'
+          : (currentUser.role === 'curator' ? `キュレーター: ${currentUser.name}` : `出展者: ${currentUser.name}`);
+
+        badge.textContent = roleLabelText;
         badge.classList.remove('hidden');
         btnCurate.classList.remove('hidden');
         btnCurate.classList.add('flex');
@@ -1362,6 +1552,17 @@
         btnLogout.classList.add('flex');
         btnLogin.classList.add('hidden');
         btnCatalogCurate.classList.remove('hidden');
+
+        // 展覧会・アカウント管理タブと全体リセットはマスター管理者のみ表示
+        if (isOwner()) {
+          tabSettingsBtn.classList.remove('hidden');
+          resetBtn.classList.remove('hidden');
+          roleLabel.textContent = `MASTER ADMINISTRATOR (${currentUser.name})`;
+        } else {
+          tabSettingsBtn.classList.add('hidden');
+          resetBtn.classList.add('hidden');
+          roleLabel.textContent = `LOGGED IN AS ${currentUser.name.toUpperCase()} (${currentUser.id})`;
+        }
       } else {
         badge.classList.add('hidden');
         btnCurate.classList.add('hidden');
@@ -1398,14 +1599,12 @@
       ctx.fillStyle = baseColor;
       ctx.fillRect(0, 0, 512, 512);
 
-      // 微細なコンクリート・石材ノイズ
       for (let i = 0; i < 6000; i++) {
         ctx.fillStyle = Math.random() > 0.5
           ? `rgba(255,255,255,${noiseAlpha})`
           : `rgba(0,0,0,${noiseAlpha})`;
         ctx.fillRect(Math.random() * 512, Math.random() * 512, 2, 2);
       }
-      // タイル目地
       ctx.strokeStyle = lineColor;
       ctx.lineWidth = 2;
       ctx.strokeRect(0, 0, 256, 256);
@@ -1453,7 +1652,6 @@
     function buildGalleryArchitecture() {
       const { width, depth, height } = ROOM;
 
-      // 床
       const floorTexLight = createFloorTexture('#e6e3dd', 'rgba(0,0,0,0.06)', 0.03);
       const floorTexDark = createFloorTexture('#1e2128', 'rgba(255,255,255,0.04)', 0.025);
       roomMaterials.floorTexLight = floorTexLight;
@@ -1469,7 +1667,6 @@
       floor.receiveShadow = true;
       scene.add(floor);
 
-      // 壁マテリアル
       roomMaterials.wall = new THREE.MeshStandardMaterial({
         color: 0xfafaf8,
         roughness: 0.9,
@@ -1483,13 +1680,11 @@
         mesh.receiveShadow = true;
         scene.add(mesh);
       };
-      // 奥・手前・左・右の4壁
       addWall(width, height, 0, height / 2, -depth / 2, 0);
       addWall(width, height, 0, height / 2, depth / 2, Math.PI);
       addWall(depth, height, -width / 2, height / 2, 0, Math.PI / 2);
       addWall(depth, height, width / 2, height / 2, 0, -Math.PI / 2);
 
-      // 巾木（ベースボード）
       roomMaterials.baseboard = new THREE.MeshStandardMaterial({ color: 0xdad8d2, roughness: 0.6 });
       const bbH = 0.14, bbD = 0.04;
       const bbFront = new THREE.Mesh(new THREE.BoxGeometry(width, bbH, bbD), roomMaterials.baseboard);
@@ -1505,7 +1700,6 @@
       bbRight.position.set(width / 2 - bbD / 2, bbH / 2, 0);
       scene.add(bbRight);
 
-      // モダンサイバー用の繊細なシアン・アクセントライン（初期は非表示）
       const cyberMat = new THREE.MeshBasicMaterial({ color: 0x00F0FF });
       const addCyberStrip = (w, h, d, x, y, z) => {
         const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), cyberMat);
@@ -1514,31 +1708,28 @@
         scene.add(m);
         cyberAccents.push(m);
       };
-      // 床際のシアンライン
       addCyberStrip(width - 0.1, 0.025, 0.025, 0, 0.15, -depth / 2 + 0.03);
+      addCyberStrip(width - 0.1, 0.025, 0.025, 0, 0.15, depth / 2 - 0.03);
       addCyberStrip(0.025, 0.025, depth - 0.1, -width / 2 + 0.03, 0.15, 0);
       addCyberStrip(0.025, 0.025, depth - 0.1, width / 2 - 0.03, 0.15, 0);
-      // 天井スリットのシアンライン
       addCyberStrip(8.4, 0.03, 0.03, 0, height - 0.06, -7.2);
       addCyberStrip(8.4, 0.03, 0.03, 0, height - 0.06, 7.2);
       addCyberStrip(0.03, 0.03, 14.4, -4.2, height - 0.06, 0);
       addCyberStrip(0.03, 0.03, 14.4, 4.2, height - 0.06, 0);
 
-      // 天井
       roomMaterials.ceiling = new THREE.MeshStandardMaterial({ color: 0xf2f2ef, roughness: 0.95 });
       const ceiling = new THREE.Mesh(new THREE.PlaneGeometry(width, depth), roomMaterials.ceiling);
       ceiling.position.set(0, height, 0);
       ceiling.rotation.x = Math.PI / 2;
       scene.add(ceiling);
 
-      // 中央の天窓（スカイライト・ライトボックス）
       roomMaterials.skylight = new THREE.MeshBasicMaterial({ color: 0xffffff });
       const skylight = new THREE.Mesh(new THREE.PlaneGeometry(7.6, 13.6), roomMaterials.skylight);
       skylight.position.set(0, height - 0.03, 0);
       skylight.rotation.x = Math.PI / 2;
       scene.add(skylight);
 
-      // 天井トラックライトレール（建築ディテール）
+      // 天井トラックライトレール（四方の壁すべてに対応）
       const railMat = new THREE.MeshStandardMaterial({ color: 0x333333, roughness: 0.4, metalness: 0.5 });
       const railLeft = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.06, 17), railMat);
       railLeft.position.set(-6.4, height - 0.1, 0);
@@ -1549,8 +1740,10 @@
       const railFront = new THREE.Mesh(new THREE.BoxGeometry(11, 0.06, 0.08), railMat);
       railFront.position.set(0, height - 0.1, -9.2);
       scene.add(railFront);
+      const railBack = railFront.clone();
+      railBack.position.z = 9.2;
+      scene.add(railBack);
 
-      // 中央の美術館ベンチ（2脚）
       const benchWoodMat = new THREE.MeshStandardMaterial({ color: 0xc8a982, roughness: 0.65 });
       const benchLegMat = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.4, metalness: 0.6 });
       const createBench = (zPos) => {
@@ -1575,7 +1768,6 @@
     }
 
     function buildGalleryLighting() {
-      // 環境光＆半球光
       lightObjects.ambient = new THREE.AmbientLight(0xffffff, 0.58);
       scene.add(lightObjects.ambient);
 
@@ -1583,7 +1775,6 @@
       lightObjects.hemi.position.set(0, ROOM.height, 0);
       scene.add(lightObjects.hemi);
 
-      // メインディレクショナルライト（天窓からの柔らかな光）
       lightObjects.mainDir = new THREE.DirectionalLight(0xfffdf8, 0.35);
       lightObjects.mainDir.position.set(2, 10, 4);
       lightObjects.mainDir.castShadow = true;
@@ -1591,7 +1782,6 @@
       lightObjects.mainDir.shadow.mapSize.height = 1024;
       scene.add(lightObjects.mainDir);
 
-      // 各展示スロット向けのスポットライト群
       lightObjects.spots = [];
       const fixtureMat = new THREE.MeshStandardMaterial({ color: 0x262626, roughness: 0.35, metalness: 0.6 });
 
@@ -1602,14 +1792,12 @@
           slot.pos[2] + slot.normal[2] * 2.5
         );
 
-        // 器具の3Dモデル
         const lamp = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.08, 0.22, 12), fixtureMat);
         lamp.position.copy(lightPos);
         lamp.lookAt(slot.pos[0], slot.pos[1], slot.pos[2]);
         lamp.rotateX(Math.PI / 2);
         scene.add(lamp);
 
-        // スポットライト本体
         const spot = new THREE.SpotLight(0xfff6e8, 0.8, 12, Math.PI / 4.2, 0.65, 1.2);
         spot.position.copy(lightPos);
         spot.target.position.set(slot.pos[0], slot.pos[1], slot.pos[2]);
@@ -1619,9 +1807,7 @@
       });
     }
 
-    // 1スロット分の作品3Dメッシュを構築・更新
     function buildArtworkSlotMesh(slotIndex) {
-      // 既存メッシュがあればクリーンアップ
       if (artworkGroups[slotIndex]) {
         const oldGroup = artworkGroups[slotIndex];
         oldGroup.traverse(obj => {
@@ -1644,10 +1830,8 @@
       group.position.set(slot.pos[0], slot.pos[1], slot.pos[2]);
       group.rotation.y = slot.rotY;
 
-      // 鑑賞者モードでは「空き」または「非公開（下書き）」は空の壁として何も表示しない
       if (!isArtworkVisibleToCurrentUser(art)) {
-        if (isAdmin && !art) {
-          // 管理者モードかつ空きスロットの場合のみ配置ガイド枠を表示
+        if (isLoggedIn() && !art) {
           const emptyFrame = new THREE.Mesh(
             new THREE.PlaneGeometry(1.7, 2.1),
             new THREE.MeshBasicMaterial({ color: 0xcccccc, transparent: true, opacity: 0.22 })
@@ -1667,7 +1851,6 @@
 
       const isDraft = art.published === false;
 
-      // アスペクト比に合わせて作品サイズを決定（最大幅 2.5m / 最大高さ 2.25m）
       const aspect = art.aspect || 0.8;
       let artW, artH;
       if (aspect >= 1) {
@@ -1679,7 +1862,6 @@
         artW = artH * aspect;
       }
 
-      // 額縁スタイル
       const hasFrame = art.frame !== 'none';
       const matPad = hasFrame ? 0.11 : 0;
       const frameBorder = hasFrame ? 0.075 : 0;
@@ -1728,7 +1910,6 @@
         group.add(panelMesh);
       }
 
-      // 作品画像テクスチャ
       const imgUrl = getArtworkImageUrl(art);
       const artMat = new THREE.MeshStandardMaterial({
         color: 0xffffff,
@@ -1753,7 +1934,6 @@
       artPlane.userData = { slotIndex, isArtwork: true };
       group.add(artPlane);
 
-      // 壁面のキャプションプレート
       const plateW = 0.34, plateH = 0.2;
       const plateCanvas = document.createElement('canvas');
       plateCanvas.width = 256;
@@ -1769,7 +1949,8 @@
       pCtx.fillText((art.artist || '').slice(0, 16), 16, 82);
       pCtx.fillStyle = isDraft ? '#b45309' : '#a1a1aa';
       pCtx.font = 'bold 13px sans-serif';
-      pCtx.fillText(isDraft ? `［下書き・非公開］ NO.0${slotIndex + 1}` : `${art.year || ''}  |  NO.0${slotIndex + 1}`, 16, 118);
+      const numStr = formatSlotNum(slotIndex);
+      pCtx.fillText(isDraft ? `［下書き・非公開］ NO.${numStr}` : `${art.year || ''}  |  NO.${numStr}`, 16, 118);
 
       const plateTex = new THREE.CanvasTexture(plateCanvas);
       const plateMesh = new THREE.Mesh(
@@ -1812,11 +1993,9 @@
     }
 
     function applyGalleryTheme(theme, notify) {
-      // bodyクラス更新
       document.body.classList.remove('theme-white', 'theme-night', 'theme-cyber');
       document.body.classList.add(`theme-${theme}`);
 
-      // ヘッダーボタン状態更新
       ['white', 'night', 'cyber'].forEach(t => {
         const btn = document.getElementById(`btn-theme-${t}`);
         if (!btn) return;
@@ -1894,10 +2073,9 @@
     }
 
     /* ==========================================================================
-       6. カメラ操作・歩行移動・衝突判定・ガイドナビゲーション
+       8. カメラ操作・歩行移動・衝突判定・ガイドナビゲーション
     ========================================================================== */
     function setupControls(container) {
-      // マウス・タッチ両対応のポインターイベント
       container.addEventListener('pointerdown', (e) => {
         if (currentViewMode !== '3d') return;
         isPointerDown = true;
@@ -1909,7 +2087,6 @@
       window.addEventListener('pointermove', (e) => {
         if (currentViewMode !== '3d') return;
 
-        // ホバー判定用NDC座標
         mouseNDC.x = (e.clientX / window.innerWidth) * 2 - 1;
         mouseNDC.y = -(e.clientY / window.innerHeight) * 2 + 1;
 
@@ -1920,7 +2097,7 @@
 
           if (totalDist > 5) {
             hasDragged = true;
-            camState.isAutoMoving = false; // 手動操作で自動移動を解除
+            camState.isAutoMoving = false;
           }
 
           const sensitivity = 0.0032;
@@ -1938,26 +2115,27 @@
         if (!isPointerDown) return;
         isPointerDown = false;
 
-        // ドラッグではなくクリックだった場合、作品をクリック判定
         if (!hasDragged && currentViewMode === '3d') {
           handleCanvasClick(e.clientX, e.clientY);
         }
       });
 
-      // キーボード歩行入力
       window.addEventListener('keydown', (e) => {
-        // フォーム入力中は無視
+        if (e.code === 'Escape') {
+          closeLightbox();
+          closeConfirmModal();
+          closeAdminLoginModal();
+          closeDetailModal();
+          closeCurateModal();
+          closeGuideOverlay();
+          return;
+        }
         if (['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)) return;
         if (currentViewMode !== '3d') return;
         const code = e.code;
         if (['KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(code)) {
           keysPressed[code] = true;
           camState.isAutoMoving = false;
-        }
-        if (code === 'Escape') {
-          closeDetailModal();
-          closeCurateModal();
-          closeLightbox();
         }
       });
 
@@ -2013,19 +2191,17 @@
         const slotIdx = hits[0].object.userData.slotIndex;
         if (artworks[slotIdx] && isArtworkVisibleToCurrentUser(artworks[slotIdx])) {
           openDetailModal(slotIdx);
-        } else if (isAdmin) {
+        } else if (isLoggedIn()) {
           openCurateModal(slotIdx);
         }
       }
     }
 
-    // 壁・中央ベンチとの衝突判定付き移動
     function applyCollisionBounds(nextPos) {
       const margin = 1.15;
       nextPos.x = Math.max(-ROOM.width / 2 + margin, Math.min(ROOM.width / 2 - margin, nextPos.x));
       nextPos.z = Math.max(-ROOM.depth / 2 + margin, Math.min(ROOM.depth / 2 - margin, nextPos.z));
 
-      // ベンチ2脚との簡易AABB衝突回避
       const benches = [
         { x: 0, z: -2.6, hw: 2.05, hd: 0.9 },
         { x: 0, z: 3.2,  hw: 2.05, hd: 0.9 }
@@ -2043,14 +2219,12 @@
       });
     }
 
-    // 最短角度補間
     function lerpAngle(current, target, t) {
       let diff = ((target - current + Math.PI) % (Math.PI * 2)) - Math.PI;
       if (diff < -Math.PI) diff += Math.PI * 2;
       return current + diff * t;
     }
 
-    // 指定スロットの正面へカメラを滑らかに移動
     function moveToSlot(slotIndex) {
       const slot = SLOTS_CONFIG[slotIndex];
       if (!slot) return;
@@ -2063,7 +2237,6 @@
         slot.pos[2] + slot.normal[2] * dist
       );
 
-      // カメラが作品中心を向くヨー角を計算
       const lookDirX = slot.pos[0] - camState.autoTargetPos.x;
       const lookDirZ = slot.pos[2] - camState.autoTargetPos.z;
       camState.autoTargetYaw = Math.atan2(-lookDirX, -lookDirZ);
@@ -2073,17 +2246,15 @@
       updateBottomNavUI();
     }
 
-    // 全体見渡しポジションへ移動
     function moveToOverview() {
       focusedSlotIndex = -1;
-      camState.autoTargetPos.set(0, 1.85, 9.4);
+      camState.autoTargetPos.set(0, 1.85, 8.6);
       camState.autoTargetYaw = 0;
       camState.autoTargetPitch = -0.03;
       camState.isAutoMoving = true;
       updateBottomNavUI();
     }
 
-    // 前/次の作品へ移動（現在のロールで表示可能な作品のみ巡回）
     function navigateArtwork(direction) {
       const visible = artworks
         .map((a, idx) => isArtworkVisibleToCurrentUser(a) ? idx : -1)
@@ -2115,7 +2286,7 @@
         titleEl.textContent = '全体見渡し';
       } else {
         const art = artworks[focusedSlotIndex];
-        slotLabel.textContent = `SLOT 0${focusedSlotIndex + 1} / 08` + (art.published === false ? ' (下書き)' : '');
+        slotLabel.textContent = `SLOT ${formatSlotNum(focusedSlotIndex)} / ${SLOTS_CONFIG.length}` + (art.published === false ? ' (下書き)' : '');
         titleEl.textContent = art.title;
       }
     }
@@ -2128,7 +2299,7 @@
     }
 
     /* ==========================================================================
-       7. メインアニメーションループ
+       9. メインアニメーションループ
     ========================================================================== */
     const clock = new THREE.Clock();
 
@@ -2138,7 +2309,6 @@
 
       if (currentViewMode === '3d') {
         if (camState.isAutoMoving) {
-          // ガイド移動のスムーズ補間
           const factor = 1 - Math.exp(-4.2 * dt);
           camState.pos.lerp(camState.autoTargetPos, factor);
           camState.yaw = lerpAngle(camState.yaw, camState.autoTargetYaw, factor);
@@ -2150,12 +2320,10 @@
             camState.isAutoMoving = false;
           }
         } else {
-          // 視点回転の滑らかな追従
           const rotFactor = 1 - Math.exp(-12 * dt);
           camState.yaw += (camState.targetYaw - camState.yaw) * rotFactor;
           camState.pitch += (camState.targetPitch - camState.pitch) * rotFactor;
 
-          // キーボード歩行移動
           const speed = 4.6 * dt;
           const forward = new THREE.Vector3(-Math.sin(camState.yaw), 0, -Math.cos(camState.yaw));
           const right = new THREE.Vector3(Math.cos(camState.yaw), 0, -Math.sin(camState.yaw));
@@ -2182,7 +2350,7 @@
     }
 
     /* ==========================================================================
-       8. 2Dカタログ一覧ビュー & 表示モード切替
+       10. 2Dカタログ一覧ビュー & 表示モード切替
     ========================================================================== */
     function setViewMode(mode) {
       currentViewMode = mode;
@@ -2220,7 +2388,7 @@
         grid.innerHTML = `
           <div class="col-span-full py-20 text-center text-neutral-400">
             <p class="text-sm">現在公開されている作品はありません。</p>
-            ${isAdmin ? '<button onclick="openCurateModal()" class="mt-4 px-5 py-2.5 rounded-xl bg-neutral-900 text-white text-xs font-medium">＋ 作品を展示する</button>' : ''}
+            ${isLoggedIn() ? '<button onclick="openCurateModal()" class="mt-4 px-5 py-2.5 rounded-xl bg-neutral-900 text-white text-xs font-medium">＋ 作品を展示する</button>' : ''}
           </div>
         `;
         return;
@@ -2234,8 +2402,8 @@
           <article class="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all border ${isDraft ? 'border-amber-300 ring-1 ring-amber-200' : 'border-neutral-200/70'} flex flex-col group">
             <div class="relative aspect-[4/3] bg-neutral-100 p-4 flex items-center justify-center overflow-hidden cursor-pointer" onclick="openDetailModal(${art.slotId})">
               <img src="${imgUrl}" alt="${escapeHtml(art.title)}" class="max-w-full max-h-full object-contain shadow-md group-hover:scale-[1.03] transition-transform duration-300 ${isDraft ? 'opacity-70' : ''}">
-              <span class="absolute top-2.5 left-2.5 bg-white/90 text-neutral-700 text-[10px] font-semibold tracking-wider px-2 py-0.5 rounded-md shadow-xs">NO.0${art.slotId + 1}</span>
-              ${isAdmin ? `<span class="absolute top-2.5 right-2.5 text-[10px] font-semibold px-2 py-0.5 rounded-md ${isDraft ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'}">${isDraft ? '下書き' : '公開中'}</span>` : ''}
+              <span class="absolute top-2.5 left-2.5 bg-white/90 text-neutral-700 text-[10px] font-semibold tracking-wider px-2 py-0.5 rounded-md shadow-xs">NO.${formatSlotNum(art.slotId)}</span>
+              ${isLoggedIn() ? `<span class="absolute top-2.5 right-2.5 text-[10px] font-semibold px-2 py-0.5 rounded-md ${isDraft ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'}">${isDraft ? '下書き' : '公開中'}</span>` : ''}
             </div>
             <div class="p-4 flex-1 flex flex-col justify-between">
               <div>
@@ -2268,7 +2436,7 @@
     }
 
     /* ==========================================================================
-       9. 作品詳細モーダル・いいね・コメント・ライトボックス
+       11. 作品詳細モーダル・いいね・コメント・ライトボックス
     ========================================================================== */
     function openDetailModal(slotIndex) {
       const art = artworks[slotIndex];
@@ -2296,22 +2464,26 @@
       document.getElementById('detail-frame').textContent = `額装: ${FRAME_LABELS[art.frame] || 'マットブラック'}`;
       document.getElementById('detail-description').textContent = art.description || '作品解説は登録されていません。';
 
-      // 管理者のみ編集ボタンとステータスバッジを表示
+      // 編集権限がある場合のみ編集ボタンを表示
       const editBtn = document.getElementById('detail-edit-btn');
       const statusBadge = document.getElementById('detail-status-badge');
-      if (isAdmin) {
+      if (canEditSlot(slotIndex)) {
         editBtn.classList.remove('hidden');
         editBtn.onclick = () => {
           closeDetailModal();
           openCurateModal(slotIndex);
         };
+      } else {
+        editBtn.classList.add('hidden');
+      }
+
+      if (isLoggedIn()) {
         statusBadge.classList.remove('hidden');
         const isDraft = art.published === false;
         statusBadge.textContent = isDraft ? '下書き（非公開）' : '公開中';
         statusBadge.className = 'text-[10px] font-semibold px-2 py-0.5 rounded-md ' +
           (isDraft ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800');
       } else {
-        editBtn.classList.add('hidden');
         statusBadge.classList.add('hidden');
       }
 
@@ -2352,7 +2524,6 @@
       if (alreadyLiked) sessionLikedSlots.delete(slotId);
       else sessionLikedSlots.add(slotId);
 
-      // 楽観的UI更新
       art.likes = Math.max(0, (art.likes || 0) + delta);
       updateDetailLikeUI(art);
 
@@ -2383,13 +2554,15 @@
         return;
       }
 
+      const canModerate = isOwner() || (currentUser && currentUser.role === 'curator') || canEditSlot(slotIndex);
+
       list.innerHTML = comments.map(c => `
         <div class="bg-neutral-50 rounded-2xl p-3 border border-neutral-100">
           <div class="flex items-center justify-between text-[11px] text-neutral-500 mb-1">
             <span class="font-semibold text-neutral-700">${escapeHtml(c.author || '匿名の鑑賞者')}</span>
             <div class="flex items-center gap-2">
               <span>${escapeHtml(c.dateStr || '')}</span>
-              ${isAdmin ? `<button onclick="deleteCommentByAdmin('${escapeHtml(c.id)}')" class="text-rose-500 hover:text-rose-700 font-medium text-[10px] px-1.5 py-0.5 rounded hover:bg-rose-50" title="管理者権限でコメントを削除">削除</button>` : ''}
+              ${canModerate ? `<button data-comment-id="${escapeHtml(c.id)}" onclick="deleteCommentByAdmin(this.dataset.commentId)" class="text-rose-500 hover:text-rose-700 font-medium text-[10px] px-1.5 py-0.5 rounded hover:bg-rose-50" title="コメントを削除">削除</button>` : ''}
             </div>
           </div>
           <p class="text-xs text-neutral-700 leading-relaxed whitespace-pre-wrap">${escapeHtml(c.text)}</p>
@@ -2433,7 +2606,7 @@
     }
 
     async function deleteCommentByAdmin(commentId) {
-      if (!isAdmin) return;
+      if (!isLoggedIn()) return;
       openConfirmModal(
         'コメントの削除',
         'この鑑賞者コメントを削除しますか？全ユーザーの画面から即時削除されます。',
@@ -2479,24 +2652,35 @@
     }
 
     /* ==========================================================================
-       10. 管理者専用：作品展示・キュレーション・設定パネル
+       12. 管理者・出展者専用：作品展示・キュレーション・アカウント管理パネル
     ========================================================================== */
     function openCurateModal(preselectSlot = null) {
-      if (!isAdmin) {
+      if (!isLoggedIn()) {
         openAdminLoginModal();
         return;
       }
       populateSlotSelect();
 
+      // 編集可能なスロットから初期選択を決定
+      const editableSlots = SLOTS_CONFIG.filter(s => canEditSlot(s.id)).map(s => s.id);
+      if (editableSlots.length === 0) {
+        showToast('現在編集可能な空きスロットがありません。管理者に空き枠の作成を依頼してください。', 'error');
+        return;
+      }
+
       let targetSlot = preselectSlot;
-      if (targetSlot === null) {
-        const emptyIdx = artworks.findIndex(a => !a);
-        targetSlot = emptyIdx !== -1 ? emptyIdx : 0;
+      if (targetSlot === null || !canEditSlot(targetSlot)) {
+        const emptyEditable = editableSlots.find(id => !artworks[id]);
+        const ownEditable = editableSlots.find(id => artworks[id] && artworks[id].ownerId === currentUser.id);
+        targetSlot = emptyEditable !== undefined ? emptyEditable : (ownEditable !== undefined ? ownEditable : editableSlots[0]);
       }
 
       document.getElementById('input-slot').value = targetSlot;
       loadSlotIntoForm(targetSlot);
-      loadSettingsIntoForm();
+      if (isOwner()) {
+        loadSettingsIntoForm();
+        renderMemberAccountsList();
+      }
       switchCurateTab('form');
       renderManageSlotList();
 
@@ -2513,6 +2697,7 @@
     }
 
     function switchCurateTab(tab) {
+      if (tab === 'settings' && !isOwner()) return;
       const tabs = ['form', 'manage', 'settings'];
       tabs.forEach(t => {
         const panel = document.getElementById(`curate-tab-${t}`);
@@ -2526,24 +2711,29 @@
         }
       });
       if (tab === 'manage') renderManageSlotList();
-      if (tab === 'settings') loadSettingsIntoForm();
+      if (tab === 'settings' && isOwner()) {
+        loadSettingsIntoForm();
+        renderMemberAccountsList();
+      }
     }
 
     function updatePublishHint() {
       const checked = document.getElementById('input-published').checked;
       document.getElementById('publish-status-hint').textContent = checked
         ? '公開中：すべての鑑賞者に表示されます'
-        : '下書き（非公開）：管理者のみプレビュー可能です';
+        : '下書き（非公開）：管理者と作成者のみプレビュー可能です';
     }
 
     function populateSlotSelect() {
       const select = document.getElementById('input-slot');
       select.innerHTML = SLOTS_CONFIG.map(slot => {
         const art = artworks[slot.id];
+        const editable = canEditSlot(slot.id);
+        const ownerTag = art && art.ownerName ? ` / 担当:${art.ownerName}` : '';
         const status = art
-          ? (art.published === false ? `［下書き: ${art.title}］` : `［公開中: ${art.title}］`)
+          ? (art.published === false ? `［下書き: ${art.title}${ownerTag}］` : `［公開中: ${art.title}${ownerTag}］`)
           : '［空き枠］';
-        return `<option value="${slot.id}">${slot.label} ${status}</option>`;
+        return `<option value="${slot.id}" ${!editable ? 'disabled' : ''}>${escapeHtml(slot.label)} ${escapeHtml(status)}${!editable ? ' (編集不可)' : ''}</option>`;
       }).join('');
 
       select.onchange = () => loadSlotIntoForm(parseInt(select.value, 10));
@@ -2571,7 +2761,8 @@
         placeholder.classList.add('hidden');
       } else {
         document.getElementById('input-title').value = '';
-        document.getElementById('input-artist').value = '';
+        // 出展者ログイン時は作家名の初期値に自分の表示名を自動セット
+        document.getElementById('input-artist').value = (currentUser && currentUser.role !== 'owner') ? currentUser.name : '';
         document.getElementById('input-year').value = new Date().getFullYear().toString();
         document.getElementById('input-medium').value = '';
         document.getElementById('input-frame').value = 'black';
@@ -2624,7 +2815,6 @@
       }
     }
 
-    // Firestore 1MB制限内に確実に収まるよう Canvas で自動リサイズ＆JPEG圧縮
     function processImageFile(file) {
       if (!file.type.startsWith('image/')) {
         showToast('画像ファイル（JPG, PNG, WebPなど）を選択してください。', 'error');
@@ -2656,7 +2846,6 @@
           ctx.fillRect(0, 0, w, h);
           ctx.drawImage(img, 0, 0, w, h);
 
-          // 品質を段階調整して約450KB以下に収める安全設計
           let quality = 0.78;
           let optimizedDataUrl = canvas.toDataURL('image/jpeg', quality);
           while (optimizedDataUrl.length > 520000 && quality > 0.35) {
@@ -2679,10 +2868,14 @@
 
     async function saveArtworkForm(e) {
       e.preventDefault();
-      if (!isAdmin) return;
+      if (!isLoggedIn()) return;
       const slotId = parseInt(document.getElementById('input-slot').value, 10);
-      const existing = artworks[slotId];
+      if (!canEditSlot(slotId)) {
+        showToast('このスロットは他の出展者が担当しているため編集できません。', 'error');
+        return;
+      }
 
+      const existing = artworks[slotId];
       if (!existing && !pendingUploadDataUrl) {
         showToast('作品画像をアップロードしてください。', 'error');
         return;
@@ -2701,6 +2894,8 @@
         frame: document.getElementById('input-frame').value,
         description: document.getElementById('input-description').value.trim(),
         published: document.getElementById('input-published').checked,
+        ownerId: existing && existing.ownerId ? existing.ownerId : currentUser.id,
+        ownerName: existing && existing.ownerName ? existing.ownerName : currentUser.name,
         likes: existing ? (existing.likes || 0) : 0,
         isCustomImage: pendingUploadDataUrl ? true : (existing ? existing.isCustomImage : false),
         customImage: pendingUploadDataUrl ? pendingUploadDataUrl.dataUrl : (existing ? existing.customImage : null),
@@ -2730,7 +2925,7 @@
 
     async function saveExhibitionSettings(e) {
       e.preventDefault();
-      if (!isAdmin) return;
+      if (!isOwner()) return;
       const title = document.getElementById('setting-title').value.trim() || 'MUSEUM OF FORMS';
       const subtitle = document.getElementById('setting-subtitle').value.trim() || 'VIRTUAL EXHIBITION ARCHIVE';
 
@@ -2741,6 +2936,7 @@
             subtitle,
             adminId: galleryConfig.adminId,
             adminPwHash: galleryConfig.adminPwHash,
+            members: galleryConfig.members || [],
             updatedAt: Date.now()
           }, { merge: true });
         } else {
@@ -2757,11 +2953,15 @@
 
     async function saveAdminCredentials(e) {
       e.preventDefault();
-      if (!isAdmin) return;
+      if (!isOwner()) return;
       const newId = document.getElementById('setting-admin-id').value.trim();
       const newPw = document.getElementById('setting-admin-pw').value;
-      if (newId.length < 3 || newPw.length < 6) {
-        showToast('IDは3文字以上、パスワードは6文字以上で設定してください。', 'error');
+      if (!/^[A-Za-z0-9_-]{3,30}$/.test(newId)) {
+        showToast('管理者IDは3〜30文字の半角英数字・ハイフン・アンダースコアで設定してください。', 'error');
+        return;
+      }
+      if (newPw.length < 6) {
+        showToast('パスワードは6文字以上で設定してください。', 'error');
         return;
       }
 
@@ -2777,23 +2977,151 @@
           galleryConfig.adminId = newId;
           galleryConfig.adminPwHash = newHash;
         }
+        currentUser.id = newId;
         document.getElementById('setting-admin-pw').value = '';
-        showToast('管理者ID・パスワードを更新しました');
+        showToast('マスター管理者ID・パスワードを更新しました');
       } catch (err) {
         console.error('管理者認証更新エラー:', err);
         showToast('認証情報の更新に失敗しました', 'error');
       }
     }
 
+    /* ==========================================================================
+       13. 複数アカウント（出展者・共同キュレーター）発行・削除機能
+    ========================================================================== */
+    async function addMemberAccount(e) {
+      e.preventDefault();
+      if (!isOwner()) return;
+
+      const name = document.getElementById('member-name').value.trim();
+      const role = document.getElementById('member-role').value;
+      const id = document.getElementById('member-id').value.trim();
+      const pw = document.getElementById('member-pw').value;
+
+      if (!name || pw.length < 4) {
+        showToast('表示名・パスワード（4文字以上）を正しく入力してください。', 'error');
+        return;
+      }
+
+      if (!/^[A-Za-z0-9_-]{3,30}$/.test(id)) {
+        showToast('ログインIDは3〜30文字の半角英数字・ハイフン・アンダースコアのみで指定してください。', 'error');
+        return;
+      }
+
+      if (id === galleryConfig.adminId || (galleryConfig.members || []).some(m => m.id === id)) {
+        showToast('そのログインIDはすでに使用されています。別のIDを指定してください。', 'error');
+        return;
+      }
+
+      const pwHash = await sha256Hex(pw);
+      const newMember = {
+        id,
+        name,
+        pwHash,
+        role,
+        createdAt: Date.now()
+      };
+
+      const updatedMembers = [...(galleryConfig.members || []), newMember];
+
+      try {
+        if (isCloudConnected && firebaseUser && db) {
+          await setDoc(getPublicDocRef('gallery_config', 'main'), {
+            members: updatedMembers,
+            updatedAt: Date.now()
+          }, { merge: true });
+        } else {
+          galleryConfig.members = updatedMembers;
+          renderMemberAccountsList();
+        }
+
+        document.getElementById('member-name').value = '';
+        document.getElementById('member-id').value = '';
+        document.getElementById('member-pw').value = '';
+        showToast(`${name}（ID: ${id}）のアカウントを発行しました`);
+      } catch (err) {
+        console.error('メンバー追加エラー:', err);
+        showToast('アカウントの発行に失敗しました', 'error');
+      }
+    }
+
+    function requestDeleteMemberAccount(memberId) {
+      if (!isOwner()) return;
+      const target = (galleryConfig.members || []).find(m => m.id === memberId);
+      if (!target) return;
+
+      openConfirmModal(
+        'アカウントの削除',
+        `「${target.name}（ID: ${target.id}）」を削除しますか？削除後、このIDではログインできなくなります。`,
+        async () => {
+          const updatedMembers = (galleryConfig.members || []).filter(m => m.id !== memberId);
+          try {
+            if (isCloudConnected && firebaseUser && db) {
+              await setDoc(getPublicDocRef('gallery_config', 'main'), {
+                members: updatedMembers,
+                updatedAt: Date.now()
+              }, { merge: true });
+            } else {
+              galleryConfig.members = updatedMembers;
+              renderMemberAccountsList();
+            }
+            showToast(`「${target.name}」のアカウントを削除しました`);
+          } catch (err) {
+            console.error('メンバー削除エラー:', err);
+            showToast('アカウントの削除に失敗しました', 'error');
+          }
+        }
+      );
+    }
+
+    function renderMemberAccountsList() {
+      const listEl = document.getElementById('member-accounts-list');
+      const badgeEl = document.getElementById('member-count-badge');
+      const members = galleryConfig.members || [];
+      badgeEl.textContent = `${members.length}名登録中`;
+
+      if (members.length === 0) {
+        listEl.innerHTML = `<p class="text-xs text-neutral-400 text-center py-3">発行済みの出展者・スタッフアカウントはまだありません。</p>`;
+        return;
+      }
+
+      listEl.innerHTML = members.map(m => {
+        const isCurator = m.role === 'curator';
+        return `
+          <div class="flex items-center justify-between gap-3 bg-white p-3 rounded-xl border border-neutral-200">
+            <div class="min-w-0">
+              <div class="flex items-center gap-2">
+                <span class="text-xs font-semibold text-neutral-900 truncate">${escapeHtml(m.name)}</span>
+                <span class="text-[10px] font-medium px-2 py-0.5 rounded ${isCurator ? 'bg-indigo-100 text-indigo-800' : 'bg-neutral-100 text-neutral-700'}">
+                  ${isCurator ? '共同キュレーター' : '出展者（担当枠のみ）'}
+                </span>
+              </div>
+              <p class="text-[11px] text-neutral-500 mt-0.5">ログインID: <code class="bg-neutral-100 px-1.5 py-0.5 rounded text-neutral-800">${escapeHtml(m.id)}</code></p>
+            </div>
+            <button data-member-id="${escapeHtml(m.id)}" onclick="requestDeleteMemberAccount(this.dataset.memberId)" class="px-2.5 py-1.5 rounded-lg text-[11px] font-medium text-rose-600 hover:bg-rose-50 shrink-0">
+              削除
+            </button>
+          </div>
+        `;
+      }).join('');
+    }
+
     function renderManageSlotList() {
       const container = document.getElementById('manage-slot-list');
+      const hintEl = document.getElementById('manage-slot-hint');
+      hintEl.textContent = (currentUser && currentUser.role === 'exhibitor')
+        ? '空きスロットへの新規展示、およびご自身が担当する作品の編集・公開切替・撤去ができます。'
+        : `全${SLOTS_CONFIG.length}スロットの公開状態・展示内容を確認、編集、撤去できます。`;
+
       container.innerHTML = SLOTS_CONFIG.map(slot => {
         const art = artworks[slot.id];
+        const editable = canEditSlot(slot.id);
+
         if (!art) {
           return `
             <div class="flex items-center justify-between gap-3 p-3 rounded-2xl border border-dashed border-neutral-300 bg-neutral-50/70">
               <div class="flex items-center gap-3 min-w-0">
-                <div class="w-12 h-12 rounded-xl bg-neutral-200/70 flex items-center justify-center text-[10px] font-semibold text-neutral-500 shrink-0">0${slot.id + 1}</div>
+                <div class="w-12 h-12 rounded-xl bg-neutral-200/70 flex items-center justify-center text-[10px] font-semibold text-neutral-500 shrink-0">${formatSlotNum(slot.id)}</div>
                 <div class="min-w-0">
                   <p class="text-xs font-medium text-neutral-500">${slot.label}</p>
                   <p class="text-[11px] text-neutral-400">空きスロット</p>
@@ -2811,24 +3139,29 @@
             <div class="flex items-center gap-3 min-w-0">
               <img src="${getArtworkImageUrl(art)}" alt="" class="w-12 h-12 rounded-xl object-cover bg-neutral-100 shrink-0 border border-neutral-100 ${isDraft ? 'opacity-65' : ''}">
               <div class="min-w-0">
-                <div class="flex items-center gap-1.5">
+                <div class="flex flex-wrap items-center gap-1.5">
                   <p class="text-[10px] text-neutral-400 font-medium">${slot.label}</p>
                   <span class="text-[9px] font-semibold px-1.5 py-0.5 rounded ${isDraft ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'}">${isDraft ? '下書き' : '公開中'}</span>
+                  ${art.ownerName ? `<span class="text-[9px] bg-neutral-100 text-neutral-600 px-1.5 py-0.5 rounded">担当: ${escapeHtml(art.ownerName)}</span>` : ''}
                 </div>
-                <p class="text-xs font-semibold text-neutral-900 truncate">${escapeHtml(art.title)}</p>
+                <p class="text-xs font-semibold text-neutral-900 truncate mt-0.5">${escapeHtml(art.title)}</p>
                 <p class="text-[11px] text-neutral-500 truncate">${escapeHtml(art.artist)} ・ ${FRAME_LABELS[art.frame] || ''}</p>
               </div>
             </div>
             <div class="flex items-center gap-1.5 shrink-0">
-              <button onclick="toggleQuickPublish(${slot.id})" class="px-2.5 py-1.5 rounded-xl text-[11px] font-medium ${isDraft ? 'bg-emerald-600 text-white hover:bg-emerald-700' : 'bg-amber-100 text-amber-800 hover:bg-amber-200'}">
-                ${isDraft ? '公開する' : '非公開へ'}
-              </button>
-              <button onclick="editSlotFromManage(${slot.id})" class="px-2.5 py-1.5 rounded-xl text-[11px] font-medium bg-neutral-100 hover:bg-neutral-200 text-neutral-800">
-                編集
-              </button>
-              <button onclick="requestDeleteSlot(${slot.id})" class="px-2.5 py-1.5 rounded-xl text-[11px] font-medium text-rose-600 hover:bg-rose-50">
-                撤去
-              </button>
+              ${editable ? `
+                <button onclick="toggleQuickPublish(${slot.id})" class="px-2.5 py-1.5 rounded-xl text-[11px] font-medium ${isDraft ? 'bg-emerald-600 text-white hover:bg-emerald-700' : 'bg-amber-100 text-amber-800 hover:bg-amber-200'}">
+                  ${isDraft ? '公開する' : '非公開へ'}
+                </button>
+                <button onclick="editSlotFromManage(${slot.id})" class="px-2.5 py-1.5 rounded-xl text-[11px] font-medium bg-neutral-100 hover:bg-neutral-200 text-neutral-800">
+                  編集
+                </button>
+                <button onclick="requestDeleteSlot(${slot.id})" class="px-2.5 py-1.5 rounded-xl text-[11px] font-medium text-rose-600 hover:bg-rose-50">
+                  撤去
+                </button>
+              ` : `
+                <span class="text-[10px] text-neutral-400 px-2 py-1 bg-neutral-100 rounded-lg">他出展者担当</span>
+              `}
             </div>
           </div>
         `;
@@ -2836,7 +3169,7 @@
     }
 
     async function toggleQuickPublish(slotId) {
-      if (!isAdmin || !artworks[slotId]) return;
+      if (!canEditSlot(slotId) || !artworks[slotId]) return;
       const nextState = artworks[slotId].published === false;
       try {
         if (isCloudConnected && firebaseUser && db) {
@@ -2849,7 +3182,7 @@
           buildArtworkSlotMesh(slotId);
           renderManageSlotList();
         }
-        showToast(`SLOT 0${slotId + 1} を「${nextState ? '公開中' : '下書き（非公開）'}」に変更しました`);
+        showToast(`SLOT ${formatSlotNum(slotId)} を「${nextState ? '公開中' : '下書き（非公開）'}」に変更しました`);
       } catch (err) {
         console.error('公開状態切替エラー:', err);
         showToast('公開状態の変更に失敗しました', 'error');
@@ -2857,6 +3190,7 @@
     }
 
     function editSlotFromManage(slotId) {
+      if (!canEditSlot(slotId)) return;
       populateSlotSelect();
       document.getElementById('input-slot').value = slotId;
       loadSlotIntoForm(slotId);
@@ -2865,10 +3199,10 @@
 
     function requestDeleteSlot(slotId) {
       const art = artworks[slotId];
-      if (!isAdmin || !art) return;
+      if (!canEditSlot(slotId) || !art) return;
       openConfirmModal(
         '作品の撤去',
-        `「${art.title}」を SLOT 0${slotId + 1} から撤去しますか？全鑑賞者の画面からも即時非表示になります。`,
+        `「${art.title}」を SLOT ${formatSlotNum(slotId)} から撤去しますか？全鑑賞者の画面からも即時非表示になります。`,
         async () => {
           try {
             if (isCloudConnected && firebaseUser && db) {
@@ -2880,7 +3214,7 @@
               if (currentViewMode === '2d') renderCatalogGrid();
             }
             updateBottomNavUI();
-            showToast(`SLOT 0${slotId + 1} の作品を撤去しました`);
+            showToast(`SLOT ${formatSlotNum(slotId)} の作品を撤去しました`);
           } catch (err) {
             console.error('撤去エラー:', err);
             showToast('作品の撤去に失敗しました', 'error');
@@ -2890,10 +3224,10 @@
     }
 
     function requestResetGallery() {
-      if (!isAdmin) return;
+      if (!isOwner()) return;
       openConfirmModal(
         '展示のリセット',
-        'すべての展示スロットを初期のジェネレーティブアート8点（公開状態）に戻します。よろしいですか？',
+        `すべての展示スロットを初期のジェネレーティブアート${SLOTS_CONFIG.length}点（公開状態）に戻します。よろしいですか？`,
         async () => {
           const defaults = generateDefaultArtworks();
           try {
@@ -2919,7 +3253,7 @@
     }
 
     /* ==========================================================================
-       11. 共有機能 & 共通UIユーティリティ
+       14. 共有機能 & 共通UIユーティリティ
     ========================================================================== */
     function shareExhibition() {
       const url = window.location.href;
@@ -3022,6 +3356,8 @@
       saveArtworkForm,
       saveExhibitionSettings,
       saveAdminCredentials,
+      addMemberAccount,
+      requestDeleteMemberAccount,
       toggleQuickPublish,
       editSlotFromManage,
       requestDeleteSlot,
@@ -3044,7 +3380,7 @@
     });
 
     /* ==========================================================================
-       12. アプリケーション起動 (window.onload)
+       15. アプリケーション起動 (window.onload)
     ========================================================================== */
     window.onload = async function () {
       try {
@@ -3063,12 +3399,3 @@
   </script>
 </body>
 </html>
-```
-
-Firebaseの認証タイムアウト保護と、Firebase Console側で「匿名認証」や「Firestoreルール」が未設定の状態で開いた場合でもローカル展示モードへスムーズに切り替わるよう修正しました。
-
-なお、Firebase（`virtual-gallery-7ef41`）とクラウド同期を完了させるには、Firebase Console 側で以下2つの設定が必要になります：
-1. **Authentication ＞ Sign-in method** で **「匿名」を有効化**
-2. **Firestore Database ＞ ルール** に手順書（`setup_guide.md`）のセキュリティルールを貼り付けて **「公開」**
-
-もしコンソール画面に表示されている具体的なエラーメッセージ（スクリーンショットや文面）があれば共有していただければ、ピンポイントで原因を確認します！
