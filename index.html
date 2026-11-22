@@ -1632,10 +1632,11 @@
       renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
       renderer.setSize(window.innerWidth, window.innerHeight);
       renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      renderer.outputEncoding = THREE.sRGBEncoding;
       renderer.shadowMap.enabled = true;
       renderer.shadowMap.type = THREE.PCFSoftShadowMap;
       renderer.toneMapping = THREE.ACESFilmicToneMapping;
-      renderer.toneMappingExposure = 1.05;
+      renderer.toneMappingExposure = 1.0;
       container.appendChild(renderer.domElement);
 
       raycaster = new THREE.Raycaster();
@@ -1911,10 +1912,11 @@
       }
 
       const imgUrl = getArtworkImageUrl(art);
-      const artMat = new THREE.MeshStandardMaterial({
-        color: 0xffffff,
-        roughness: 0.42,
-        metalness: 0.04,
+      // 元画像の色味・彩度を忠実に再現するため、トーンマッピングと照明反射の影響を受けないマテリアルを使用
+      const artTint = currentTheme === 'night' ? 0xebe4d8 : 0xffffff;
+      const artMat = new THREE.MeshBasicMaterial({
+        color: artTint,
+        toneMapped: false,
         transparent: isDraft,
         opacity: isDraft ? 0.62 : 1.0
       });
@@ -1923,6 +1925,9 @@
       img.onload = () => {
         const tex = new THREE.Texture(img);
         tex.encoding = THREE.sRGBEncoding;
+        if (renderer && renderer.capabilities) {
+          tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
+        }
         tex.needsUpdate = true;
         artMat.map = tex;
         artMat.needsUpdate = true;
@@ -2019,18 +2024,18 @@
       if (theme === 'white') {
         scene.background.setHex(0xf4f4f2);
         scene.fog.color.setHex(0xf4f4f2);
-        roomMaterials.wall.color.setHex(0xfafaf8);
-        roomMaterials.ceiling.color.setHex(0xf2f2ef);
-        roomMaterials.baseboard.color.setHex(0xdad8d2);
+        roomMaterials.wall.color.setHex(0xf5f5f2);
+        roomMaterials.ceiling.color.setHex(0xededeb);
+        roomMaterials.baseboard.color.setHex(0xd4d2cc);
         roomMaterials.skylight.color.setHex(0xffffff);
         roomMaterials.floor.map = roomMaterials.floorTexLight;
         roomMaterials.floor.needsUpdate = true;
 
         lightObjects.ambient.color.setHex(0xffffff);
-        lightObjects.ambient.intensity = 0.62;
-        lightObjects.hemi.intensity = 0.45;
-        lightObjects.mainDir.intensity = 0.35;
-        lightObjects.spots.forEach(s => { s.color.setHex(0xfff6e8); s.intensity = 0.72; });
+        lightObjects.ambient.intensity = 0.48;
+        lightObjects.hemi.intensity = 0.32;
+        lightObjects.mainDir.intensity = 0.25;
+        lightObjects.spots.forEach(s => { s.color.setHex(0xfff6e8); s.intensity = 0.52; });
         cyberAccents.forEach(m => m.visible = false);
       } else if (theme === 'night') {
         scene.background.setHex(0x0c0e12);
@@ -2043,28 +2048,36 @@
         roomMaterials.floor.needsUpdate = true;
 
         lightObjects.ambient.color.setHex(0x9fb2cc);
-        lightObjects.ambient.intensity = 0.18;
-        lightObjects.hemi.intensity = 0.12;
-        lightObjects.mainDir.intensity = 0.05;
-        lightObjects.spots.forEach(s => { s.color.setHex(0xffe9c6); s.intensity = 1.95; });
+        lightObjects.ambient.intensity = 0.14;
+        lightObjects.hemi.intensity = 0.1;
+        lightObjects.mainDir.intensity = 0.04;
+        lightObjects.spots.forEach(s => { s.color.setHex(0xffe9c6); s.intensity = 1.65; });
         cyberAccents.forEach(m => m.visible = false);
       } else if (theme === 'cyber') {
         scene.background.setHex(0xf0f6fa);
         scene.fog.color.setHex(0xf0f6fa);
-        roomMaterials.wall.color.setHex(0xf7fafc);
-        roomMaterials.ceiling.color.setHex(0xeef5f9);
-        roomMaterials.baseboard.color.setHex(0xdbe7ee);
+        roomMaterials.wall.color.setHex(0xf2f7fa);
+        roomMaterials.ceiling.color.setHex(0xe8f1f6);
+        roomMaterials.baseboard.color.setHex(0xd4e2ea);
         roomMaterials.skylight.color.setHex(0xeaffff);
         roomMaterials.floor.map = roomMaterials.floorTexLight;
         roomMaterials.floor.needsUpdate = true;
 
         lightObjects.ambient.color.setHex(0xe8fbff);
-        lightObjects.ambient.intensity = 0.62;
-        lightObjects.hemi.intensity = 0.42;
-        lightObjects.mainDir.intensity = 0.32;
-        lightObjects.spots.forEach(s => { s.color.setHex(0xd6fcff); s.intensity = 0.9; });
+        lightObjects.ambient.intensity = 0.48;
+        lightObjects.hemi.intensity = 0.3;
+        lightObjects.mainDir.intensity = 0.22;
+        lightObjects.spots.forEach(s => { s.color.setHex(0xd6fcff); s.intensity = 0.65; });
         cyberAccents.forEach(m => m.visible = true);
       }
+
+      // 展示作品の色味をテーマに合わせる（ホワイト・サイバーは元画像100%忠実、ナイトは落ち着いた発色）
+      const targetArtTint = theme === 'night' ? 0xebe4d8 : 0xffffff;
+      clickableMeshes.forEach(mesh => {
+        if (mesh.userData && mesh.userData.isArtwork && mesh.material && mesh.material.color) {
+          mesh.material.color.setHex(targetArtTint);
+        }
+      });
 
       if (notify) {
         const names = { white: 'ホワイトキューブ', night: 'ナイトミュージアム', cyber: 'モダンサイバー' };
@@ -2825,7 +2838,7 @@
       reader.onload = (ev) => {
         const img = new Image();
         img.onload = () => {
-          const maxDim = 760;
+          const maxDim = 1024;
           let w = img.width;
           let h = img.height;
           if (w > maxDim || h > maxDim) {
@@ -2846,10 +2859,10 @@
           ctx.fillRect(0, 0, w, h);
           ctx.drawImage(img, 0, 0, w, h);
 
-          let quality = 0.78;
+          let quality = 0.86;
           let optimizedDataUrl = canvas.toDataURL('image/jpeg', quality);
-          while (optimizedDataUrl.length > 520000 && quality > 0.35) {
-            quality -= 0.1;
+          while (optimizedDataUrl.length > 560000 && quality > 0.4) {
+            quality -= 0.08;
             optimizedDataUrl = canvas.toDataURL('image/jpeg', quality);
           }
 
