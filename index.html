@@ -1,0 +1,3074 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>MUSEUM OF FORMS — Cloud Edition バーチャル展覧会</title>
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Three.js r128 -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <!-- Google Fonts: 洗練された美術館タイポグラフィ -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Inter:wght@300;400;500;600&family=Noto+Sans+JP:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Inter"', '"Noto Sans JP"', 'sans-serif'],
+            serif: ['"Cormorant Garamond"', '"Noto Sans JP"', 'serif'],
+          },
+          colors: {
+            cyber: '#00F0FF',
+          }
+        }
+      }
+    };
+  </script>
+
+  <style>
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      font-family: 'Inter', 'Noto Sans JP', sans-serif;
+      user-select: none;
+    }
+    #canvas-container {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+      cursor: grab;
+      touch-action: none;
+    }
+    #canvas-container:active {
+      cursor: grabbing;
+    }
+    #canvas-container.pointer-hover {
+      cursor: pointer;
+    }
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+    /* カスタムスクロールバー */
+    .custom-scroll::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    .custom-scroll::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .custom-scroll::-webkit-scrollbar-thumb {
+      background: rgba(156, 163, 175, 0.45);
+      border-radius: 9999px;
+    }
+    .custom-scroll::-webkit-scrollbar-thumb:hover {
+      background: rgba(107, 114, 128, 0.7);
+    }
+    /* 控えめなガラスモーフィズム */
+    .glass-panel {
+      background: rgba(255, 255, 255, 0.84);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid rgba(255, 255, 255, 0.55);
+    }
+    .theme-night .glass-panel {
+      background: rgba(20, 22, 27, 0.82);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: #f3f4f6;
+    }
+    .theme-cyber .glass-panel {
+      background: rgba(248, 252, 255, 0.85);
+      border: 1px solid rgba(0, 240, 255, 0.35);
+      box-shadow: 0 4px 24px rgba(0, 240, 255, 0.08);
+    }
+    /* アニメーション */
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .animate-fade-in {
+      animation: fadeIn 0.25s ease-out forwards;
+    }
+    @keyframes heartPop {
+      0% { transform: scale(1); }
+      45% { transform: scale(1.35); }
+      100% { transform: scale(1); }
+    }
+    .animate-heart {
+      animation: heartPop 0.32s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+  </style>
+</head>
+<body class="bg-neutral-100 text-neutral-900 antialiased">
+
+  <!-- 3D ギャラリーキャンバス -->
+  <div id="canvas-container" aria-label="3Dバーチャルギャラリー空間"></div>
+
+  <!-- クラウド接続・同期ローディングオーバーレイ -->
+  <div id="cloud-loading" class="fixed inset-0 z-[60] flex flex-col items-center justify-center bg-neutral-100/95 backdrop-blur-md transition-opacity duration-300">
+    <div class="w-10 h-10 border-2 border-neutral-300 border-t-neutral-900 rounded-full animate-spin mb-4"></div>
+    <p class="font-serif text-lg tracking-widest font-semibold text-neutral-900">MUSEUM OF FORMS</p>
+    <p id="cloud-loading-text" class="text-xs text-neutral-500 mt-1.5">クラウド展示空間に接続しています...</p>
+  </div>
+
+  <!-- ヘッダーナビゲーション -->
+  <header class="fixed top-0 left-0 right-0 z-30 pointer-events-none p-3 sm:p-4">
+    <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2">
+      <!-- 美術館タイトル & 接続ステータス -->
+      <div class="glass-panel pointer-events-auto rounded-2xl px-4 py-2.5 shadow-sm flex items-center gap-3">
+        <div class="w-2.5 h-2.5 rounded-full bg-neutral-900 transition-colors duration-300 shrink-0" id="brand-dot"></div>
+        <div class="min-w-0">
+          <div class="flex items-center gap-2">
+            <h1 id="header-exhibition-title" class="font-serif text-base sm:text-lg tracking-widest font-semibold leading-none truncate">MUSEUM OF FORMS</h1>
+            <span id="admin-mode-badge" class="hidden px-2 py-0.5 rounded-md bg-amber-500/15 text-amber-700 border border-amber-500/30 text-[10px] font-semibold tracking-wider shrink-0">管理者モード</span>
+          </div>
+          <div class="flex items-center gap-2 mt-0.5">
+            <p id="header-exhibition-subtitle" class="text-[10px] tracking-wider opacity-60 truncate">VIRTUAL EXHIBITION ARCHIVE</p>
+            <span id="sync-status-badge" class="inline-flex items-center gap-1 text-[9px] opacity-65 shrink-0" title="クラウド同期ステータス">
+              <span id="sync-status-dot" class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+              <span id="sync-status-text">LIVE</span>
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- コントロール群 -->
+      <div class="flex flex-wrap items-center gap-2 pointer-events-auto">
+        <!-- モード切替 (3D空間 / 2Dカタログ) -->
+        <div class="glass-panel rounded-2xl p-1 shadow-sm flex items-center text-xs font-medium">
+          <button id="btn-mode-3d" class="px-3 py-1.5 rounded-xl transition-all bg-neutral-900 text-white" onclick="setViewMode('3d')">
+            3D空間
+          </button>
+          <button id="btn-mode-2d" class="px-3 py-1.5 rounded-xl transition-all hover:opacity-80" onclick="setViewMode('2d')">
+            2Dカタログ
+          </button>
+        </div>
+
+        <!-- 空間ライティングテーマ切替 -->
+        <div class="glass-panel rounded-2xl p-1 shadow-sm flex items-center text-xs font-medium" title="空間ライティングを切り替え">
+          <button id="btn-theme-white" onclick="setGalleryTheme('white')" class="px-2.5 py-1.5 rounded-xl transition-all bg-neutral-900 text-white" title="ホワイトキューブ">
+            <span class="hidden sm:inline">ホワイト</span>
+            <span class="sm:hidden">昼</span>
+          </button>
+          <button id="btn-theme-night" onclick="setGalleryTheme('night')" class="px-2.5 py-1.5 rounded-xl transition-all hover:opacity-80" title="ナイトミュージアム">
+            <span class="hidden sm:inline">ナイト</span>
+            <span class="sm:hidden">夜</span>
+          </button>
+          <button id="btn-theme-cyber" onclick="setGalleryTheme('cyber')" class="px-2.5 py-1.5 rounded-xl transition-all hover:opacity-80" title="モダンサイバー">
+            <span class="hidden sm:inline">サイバー</span>
+            <span class="sm:hidden">光</span>
+          </button>
+        </div>
+
+        <!-- 展覧会を共有ボタン -->
+        <button onclick="shareExhibition()" class="glass-panel rounded-2xl px-3 py-2 text-xs font-medium hover:opacity-80 transition-all shadow-sm flex items-center gap-1.5" title="この展覧会のURLをコピーして共有">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"/></svg>
+          <span class="hidden sm:inline">展覧会を共有</span>
+        </button>
+
+        <!-- 管理者専用：作品展示・管理ボタン（通常鑑賞者には非表示） -->
+        <button id="btn-admin-curate" onclick="openCurateModal()" class="hidden rounded-2xl px-3.5 py-2 text-xs font-medium bg-neutral-900 text-white hover:bg-neutral-700 transition-all shadow-sm items-center gap-1.5">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+          <span>展示・管理</span>
+        </button>
+
+        <!-- 管理者専用：ログアウトボタン -->
+        <button id="btn-admin-logout" onclick="logoutAdmin()" class="hidden glass-panel rounded-2xl px-3 py-2 text-xs font-medium text-rose-600 hover:bg-rose-50 transition-all shadow-sm items-center gap-1" title="管理者ログアウト">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+          <span class="hidden md:inline">ログアウト</span>
+        </button>
+
+        <!-- 控えめな鍵アイコン（管理者ログイン入口） -->
+        <button id="btn-admin-login" onclick="openAdminLoginModal()" class="glass-panel rounded-2xl w-8 h-8 flex items-center justify-center opacity-70 hover:opacity-100 transition-all shadow-sm" title="管理者ログイン (Admin)" aria-label="管理者ログイン">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+        </button>
+
+        <!-- 操作ガイド表示ボタン -->
+        <button onclick="openGuideOverlay()" class="glass-panel rounded-2xl w-8 h-8 flex items-center justify-center text-xs font-semibold hover:opacity-80 transition-all shadow-sm" title="操作ガイドを見る" aria-label="操作ガイド">
+          ?
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- 左上の控えめな操作ヒント（3Dモード時のみ表示） -->
+  <div id="hud-hints" class="fixed top-20 left-4 z-20 pointer-events-none hidden md:block">
+    <div class="glass-panel rounded-2xl px-3.5 py-2.5 text-[11px] leading-relaxed opacity-85 shadow-sm space-y-1">
+      <div class="flex items-center gap-2"><span class="font-semibold w-16 opacity-70">視点回転</span><span>マウスドラッグ</span></div>
+      <div class="flex items-center gap-2"><span class="font-semibold w-16 opacity-70">歩行移動</span><span>W A S D / 矢印キー</span></div>
+      <div class="flex items-center gap-2"><span class="font-semibold w-16 opacity-70">作品鑑賞</span><span>作品をクリック</span></div>
+    </div>
+  </div>
+
+  <!-- 作品ホバーツールチップ（3D空間で作品にカーソルを合わせたとき） -->
+  <div id="hover-tooltip" class="fixed z-20 pointer-events-none hidden transition-opacity duration-150">
+    <div class="glass-panel rounded-xl px-3 py-2 shadow-md text-xs max-w-[220px]">
+      <div id="tooltip-title" class="font-semibold truncate"></div>
+      <div id="tooltip-artist" class="text-[11px] opacity-70 truncate mt-0.5"></div>
+      <div class="text-[10px] opacity-55 mt-1">クリックして詳細を鑑賞</div>
+    </div>
+  </div>
+
+  <!-- 画面下部のガイドナビゲーションバー（3Dモード時） -->
+  <nav id="bottom-guide-nav" class="fixed bottom-4 left-1/2 -translate-x-1/2 z-20 w-[94%] max-w-xl pointer-events-auto">
+    <div class="glass-panel rounded-2xl px-2.5 py-2 shadow-lg flex items-center justify-between gap-2">
+      <!-- 前の作品 -->
+      <button onclick="navigateArtwork(-1)" class="px-3 py-2 rounded-xl hover:bg-black/5 dark:hover:bg-white/10 transition-colors flex items-center gap-1.5 text-xs font-medium shrink-0" title="前の作品へ移動">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+        <span class="hidden sm:inline">前の作品</span>
+      </button>
+
+      <!-- 現在のフォーカス表示 -->
+      <div class="flex-1 min-w-0 text-center px-2 cursor-pointer" onclick="openCurrentFocusedArtwork()" title="現在の作品詳細を開く">
+        <div id="nav-slot-label" class="text-[10px] uppercase tracking-widest opacity-60">GALLERY OVERVIEW</div>
+        <div id="nav-artwork-title" class="text-xs sm:text-sm font-medium truncate mt-0.5">全体見渡し</div>
+      </div>
+
+      <!-- 次の作品 -->
+      <button onclick="navigateArtwork(1)" class="px-3 py-2 rounded-xl hover:bg-black/5 dark:hover:bg-white/10 transition-colors flex items-center gap-1.5 text-xs font-medium shrink-0" title="次の作品へ移動">
+        <span class="hidden sm:inline">次の作品</span>
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+      </button>
+
+      <!-- 区切り線 -->
+      <div class="w-px h-6 bg-current opacity-15 shrink-0"></div>
+
+      <!-- 全体見渡しボタン -->
+      <button onclick="moveToOverview()" class="px-3 py-2 rounded-xl hover:bg-black/5 dark:hover:bg-white/10 transition-colors flex items-center gap-1.5 text-xs font-medium shrink-0" title="展示室全体を見渡す">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
+        <span class="hidden sm:inline">全体見渡し</span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- 2D カタログ一覧ビュー -->
+  <section id="catalog-view" class="fixed inset-0 z-20 hidden bg-neutral-50/95 backdrop-blur-md overflow-y-auto custom-scroll pt-24 pb-16 px-4 sm:px-8 transition-colors duration-300">
+    <div class="max-w-6xl mx-auto">
+      <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8 border-b border-neutral-200 pb-5">
+        <div>
+          <p class="text-xs tracking-[0.2em] uppercase text-neutral-500">EXHIBITION CATALOGUE</p>
+          <h2 class="font-serif text-2xl sm:text-3xl font-semibold mt-1">展示作品一覧</h2>
+        </div>
+        <div class="text-xs text-neutral-500 flex items-center gap-4">
+          <span id="catalog-count">全 8 作品展示中</span>
+          <button id="btn-catalog-curate" onclick="openCurateModal()" class="hidden text-neutral-900 underline underline-offset-4 font-medium hover:opacity-70">＋ 展示を管理する</button>
+        </div>
+      </div>
+
+      <!-- カタロググリッド -->
+      <div id="catalog-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <!-- JSで動的にカードを生成 -->
+      </div>
+    </div>
+  </section>
+
+  <!-- 作品詳細モーダル -->
+  <div id="detail-modal" class="fixed inset-0 z-40 hidden items-center justify-center p-3 sm:p-6 bg-black/60 backdrop-blur-sm">
+    <div class="bg-white text-neutral-900 rounded-3xl shadow-2xl w-full max-w-5xl max-h-[92vh] overflow-hidden flex flex-col lg:flex-row animate-fade-in">
+      <!-- 左側：作品画像プレビュー -->
+      <div class="lg:w-3/5 bg-neutral-100 relative flex items-center justify-center p-6 sm:p-10 min-h-[260px] max-h-[45vh] lg:max-h-none">
+        <img id="detail-img" src="" alt="作品プレビュー" class="max-w-full max-h-full object-contain shadow-xl rounded-sm cursor-zoom-in transition-transform duration-300 hover:scale-[1.01]" onclick="openLightbox()">
+        <button onclick="openLightbox()" class="absolute bottom-4 right-4 bg-white/90 hover:bg-white text-neutral-800 rounded-xl px-3 py-1.5 text-xs font-medium shadow-sm flex items-center gap-1.5 transition-all">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v6m3-3H7"/></svg>
+          拡大表示
+        </button>
+        <div id="detail-slot-badge" class="absolute top-4 left-4 bg-black/70 text-white text-[10px] tracking-widest uppercase px-2.5 py-1 rounded-lg">
+          SLOT 01
+        </div>
+      </div>
+
+      <!-- 右側：作品情報・いいね・感想コメント -->
+      <div class="lg:w-2/5 flex flex-col max-h-[47vh] lg:max-h-[92vh] border-t lg:border-t-0 lg:border-l border-neutral-200">
+        <!-- モーダルヘッダー -->
+        <div class="px-6 py-4 border-b border-neutral-100 flex items-center justify-between shrink-0">
+          <div class="flex items-center gap-2">
+            <span class="text-[11px] tracking-widest uppercase text-neutral-400">ARTWORK DETAIL</span>
+            <span id="detail-status-badge" class="hidden text-[10px] font-semibold px-2 py-0.5 rounded-md"></span>
+          </div>
+          <div class="flex items-center gap-2">
+            <button id="detail-edit-btn" class="hidden text-xs text-neutral-500 hover:text-neutral-900 px-2.5 py-1 rounded-lg hover:bg-neutral-100 transition-colors">
+              編集
+            </button>
+            <button onclick="closeDetailModal()" class="w-8 h-8 rounded-full hover:bg-neutral-100 flex items-center justify-center text-neutral-500 hover:text-neutral-900 transition-colors" aria-label="閉じる">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- スクロール可能な詳細コンテンツ -->
+        <div class="p-6 overflow-y-auto custom-scroll flex-1 space-y-6">
+          <div>
+            <h3 id="detail-title" class="text-xl sm:text-2xl font-semibold tracking-tight leading-snug"></h3>
+            <p id="detail-artist" class="text-sm text-neutral-600 mt-1 font-medium"></p>
+            <div class="flex flex-wrap gap-2 mt-3 text-[11px] text-neutral-500">
+              <span id="detail-year" class="bg-neutral-100 px-2.5 py-1 rounded-lg"></span>
+              <span id="detail-medium" class="bg-neutral-100 px-2.5 py-1 rounded-lg"></span>
+              <span id="detail-frame" class="bg-neutral-100 px-2.5 py-1 rounded-lg"></span>
+            </div>
+          </div>
+
+          <!-- 作品解説 -->
+          <div>
+            <h4 class="text-[11px] font-semibold tracking-widest uppercase text-neutral-400 mb-2">STATEMENT</h4>
+            <p id="detail-description" class="text-sm leading-relaxed text-neutral-700 whitespace-pre-wrap"></p>
+          </div>
+
+          <!-- アクションバー（いいね＆3D移動） -->
+          <div class="flex items-center gap-3 pt-2 border-t border-neutral-100">
+            <button id="detail-like-btn" onclick="toggleLikeCurrent()" class="flex items-center gap-2 px-4 py-2 rounded-xl border border-neutral-200 hover:border-rose-300 hover:bg-rose-50/60 transition-all text-sm font-medium">
+              <svg id="detail-like-icon" class="w-4 h-4 text-neutral-400 transition-colors" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+              </svg>
+              <span>いいね</span>
+              <span id="detail-like-count" class="text-xs bg-neutral-100 px-2 py-0.5 rounded-full">0</span>
+            </button>
+
+            <button onclick="focusCurrentIn3D()" class="flex-1 px-4 py-2 rounded-xl bg-neutral-900 text-white hover:bg-neutral-700 transition-colors text-xs sm:text-sm font-medium text-center">
+              3D空間で正面へ移動
+            </button>
+          </div>
+
+          <!-- 鑑賞コメントセクション -->
+          <div class="pt-4 border-t border-neutral-100">
+            <h4 class="text-[11px] font-semibold tracking-widest uppercase text-neutral-400 mb-3 flex items-center justify-between">
+              <span>VISITOR NOTES / 感想コメント</span>
+              <span id="detail-comment-count" class="text-neutral-500">0件</span>
+            </h4>
+
+            <!-- コメント一覧 -->
+            <div id="detail-comments-list" class="space-y-3 mb-4">
+              <!-- JSで描画 -->
+            </div>
+
+            <!-- コメント投稿フォーム -->
+            <form id="comment-form" onsubmit="submitComment(event)" class="space-y-2.5 bg-neutral-50 p-3.5 rounded-2xl border border-neutral-100">
+              <input id="comment-author" type="text" maxlength="24" placeholder="お名前（任意・例：鑑賞者A）" class="w-full text-xs bg-white border border-neutral-200 rounded-xl px-3 py-2 focus:outline-none focus:border-neutral-900">
+              <textarea id="comment-text" rows="2" maxlength="200" required placeholder="作品の印象や感想を残しましょう..." class="w-full text-xs bg-white border border-neutral-200 rounded-xl px-3 py-2 focus:outline-none focus:border-neutral-900 resize-none"></textarea>
+              <div class="flex justify-end">
+                <button type="submit" class="px-4 py-1.5 rounded-xl bg-neutral-900 text-white text-xs font-medium hover:bg-neutral-700 transition-colors">
+                  感想を投稿
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 高解像度拡大ライトボックス -->
+  <div id="lightbox-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/92 p-4 sm:p-8 cursor-zoom-out" onclick="closeLightbox()">
+    <button onclick="closeLightbox()" class="absolute top-5 right-5 w-10 h-10 rounded-full bg-white/15 hover:bg-white/25 text-white flex items-center justify-center transition-colors" aria-label="拡大を閉じる">
+      <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+    </button>
+    <img id="lightbox-img" src="" alt="拡大プレビュー" class="max-w-full max-h-[88vh] object-contain rounded shadow-2xl" onclick="event.stopPropagation()">
+    <div id="lightbox-caption" class="absolute bottom-5 left-1/2 -translate-x-1/2 text-white/85 text-xs sm:text-sm tracking-wide bg-black/50 px-4 py-2 rounded-full backdrop-blur-sm"></div>
+  </div>
+
+  <!-- 作品展示・キュレーション管理モーダル -->
+  <div id="curate-modal" class="fixed inset-0 z-40 hidden items-center justify-center p-3 sm:p-6 bg-black/60 backdrop-blur-sm">
+    <div class="bg-white text-neutral-900 rounded-3xl shadow-2xl w-full max-w-3xl max-h-[92vh] overflow-hidden flex flex-col animate-fade-in">
+      <!-- ヘッダー -->
+      <div class="px-6 py-4 border-b border-neutral-200 flex items-center justify-between shrink-0">
+        <div>
+          <p class="text-[10px] tracking-widest uppercase text-neutral-400">CURATION STUDIO</p>
+          <h3 class="text-lg font-semibold">作品展示・キュレーション管理</h3>
+        </div>
+        <button onclick="closeCurateModal()" class="w-8 h-8 rounded-full hover:bg-neutral-100 flex items-center justify-center text-neutral-500 hover:text-neutral-900" aria-label="閉じる">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <!-- タブ切替 -->
+      <div class="px-6 pt-3 border-b border-neutral-100 flex gap-5 text-xs sm:text-sm font-medium shrink-0 overflow-x-auto">
+        <button id="tab-btn-form" onclick="switchCurateTab('form')" class="pb-3 border-b-2 border-neutral-900 text-neutral-900 transition-colors whitespace-nowrap">
+          作品を展示 / 編集
+        </button>
+        <button id="tab-btn-manage" onclick="switchCurateTab('manage')" class="pb-3 border-b-2 border-transparent text-neutral-400 hover:text-neutral-700 transition-colors whitespace-nowrap">
+          展示スロット一覧
+        </button>
+        <button id="tab-btn-settings" onclick="switchCurateTab('settings')" class="pb-3 border-b-2 border-transparent text-neutral-400 hover:text-neutral-700 transition-colors whitespace-nowrap">
+          展覧会・管理者設定
+        </button>
+      </div>
+
+      <!-- タブ1：展示・編集フォーム -->
+      <div id="curate-tab-form" class="p-6 overflow-y-auto custom-scroll flex-1">
+        <form id="curate-form" onsubmit="saveArtworkForm(event)" class="space-y-5">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- 画像アップロードエリア -->
+            <div class="space-y-2">
+              <label class="block text-xs font-semibold text-neutral-700">作品画像 <span class="text-rose-500">*</span></label>
+              <div id="drop-zone" class="relative border-2 border-dashed border-neutral-300 hover:border-neutral-900 rounded-2xl p-4 text-center transition-colors cursor-pointer bg-neutral-50 min-h-[210px] flex flex-col items-center justify-center overflow-hidden">
+                <input type="file" id="image-file-input" accept="image/*" class="hidden" onchange="handleFileSelect(event)">
+                <img id="upload-preview" src="" alt="アップロードプレビュー" class="hidden max-h-[190px] max-w-full object-contain rounded-lg shadow-sm">
+                <div id="upload-placeholder" class="space-y-2 py-4">
+                  <svg class="w-8 h-8 mx-auto text-neutral-400" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"/>
+                  </svg>
+                  <p class="text-xs font-medium text-neutral-700">画像をドラッグ＆ドロップ</p>
+                  <p class="text-[11px] text-neutral-400">またはクリックしてファイルを選択<br>（自動で軽量化されます）</p>
+                </div>
+              </div>
+              <p class="text-[11px] text-neutral-400">※ JPG / PNG / WebP対応。既存作品の編集時は画像を変更せず保存可能です。</p>
+            </div>
+
+            <!-- 基本メタデータ -->
+            <div class="space-y-3.5">
+              <div>
+                <label for="input-slot" class="block text-xs font-semibold text-neutral-700 mb-1">展示スロット（壁の配置場所）</label>
+                <select id="input-slot" class="w-full text-xs border border-neutral-300 rounded-xl px-3 py-2.5 bg-white focus:outline-none focus:border-neutral-900"></select>
+              </div>
+              <div>
+                <label for="input-title" class="block text-xs font-semibold text-neutral-700 mb-1">作品タイトル <span class="text-rose-500">*</span></label>
+                <input id="input-title" type="text" required maxlength="60" placeholder="例：静寂のコンポジション" class="w-full text-xs border border-neutral-300 rounded-xl px-3 py-2.5 focus:outline-none focus:border-neutral-900">
+              </div>
+              <div>
+                <label for="input-artist" class="block text-xs font-semibold text-neutral-700 mb-1">作家名 <span class="text-rose-500">*</span></label>
+                <input id="input-artist" type="text" required maxlength="40" placeholder="例：山田 太郎 / Taro Yamada" class="w-full text-xs border border-neutral-300 rounded-xl px-3 py-2.5 focus:outline-none focus:border-neutral-900">
+              </div>
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label for="input-year" class="block text-xs font-semibold text-neutral-700 mb-1">制作年</label>
+                  <input id="input-year" type="text" maxlength="12" placeholder="2026" class="w-full text-xs border border-neutral-300 rounded-xl px-3 py-2.5 focus:outline-none focus:border-neutral-900">
+                </div>
+                <div>
+                  <label for="input-frame" class="block text-xs font-semibold text-neutral-700 mb-1">額縁スタイル</label>
+                  <select id="input-frame" class="w-full text-xs border border-neutral-300 rounded-xl px-3 py-2.5 bg-white focus:outline-none focus:border-neutral-900">
+                    <option value="black">マットブラック</option>
+                    <option value="wood">ナチュラルウッド</option>
+                    <option value="white">ホワイト</option>
+                    <option value="none">フレームなし</option>
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label for="input-medium" class="block text-xs font-semibold text-neutral-700 mb-1">技法・メディア</label>
+                <input id="input-medium" type="text" maxlength="60" placeholder="例：デジタルプリント、アクリル・キャンバス" class="w-full text-xs border border-neutral-300 rounded-xl px-3 py-2.5 focus:outline-none focus:border-neutral-900">
+              </div>
+
+              <!-- 公開ステータス切替 -->
+              <div class="pt-1">
+                <label class="flex items-center justify-between p-3 rounded-xl border border-neutral-200 bg-neutral-50 cursor-pointer">
+                  <div>
+                    <span class="block text-xs font-semibold text-neutral-800">公開ステータス</span>
+                    <span id="publish-status-hint" class="block text-[10px] text-neutral-500 mt-0.5">公開中：すべての鑑賞者に表示されます</span>
+                  </div>
+                  <div class="relative inline-flex items-center">
+                    <input type="checkbox" id="input-published" class="sr-only peer" checked onchange="updatePublishHint()">
+                    <div class="w-10 h-5 bg-neutral-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-600"></div>
+                  </div>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <!-- 作品解説 -->
+          <div>
+            <label for="input-description" class="block text-xs font-semibold text-neutral-700 mb-1">作品解説（ステートメント）</label>
+            <textarea id="input-description" rows="3" maxlength="500" placeholder="作品のコンセプトや制作背景などを記入してください..." class="w-full text-xs border border-neutral-300 rounded-xl px-3 py-2.5 focus:outline-none focus:border-neutral-900 resize-none"></textarea>
+          </div>
+
+          <!-- 送信ボタン -->
+          <div class="flex items-center justify-end gap-3 pt-2 border-t border-neutral-100">
+            <button type="button" onclick="closeCurateModal()" class="px-4 py-2.5 rounded-xl text-xs font-medium text-neutral-600 hover:bg-neutral-100 transition-colors">
+              キャンセル
+            </button>
+            <button id="btn-save-artwork" type="submit" class="px-6 py-2.5 rounded-xl text-xs font-medium bg-neutral-900 text-white hover:bg-neutral-700 transition-colors shadow-sm">
+              クラウドに保存して反映する
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <!-- タブ2：スロット管理一覧 -->
+      <div id="curate-tab-manage" class="p-6 overflow-y-auto custom-scroll flex-1 hidden space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-2 bg-neutral-50 p-3.5 rounded-2xl border border-neutral-200/70">
+          <p class="text-xs text-neutral-600">全8スロットの公開状態・展示内容を確認、編集、撤去できます。</p>
+          <button onclick="requestResetGallery()" class="px-3 py-1.5 rounded-xl text-xs font-medium text-rose-600 bg-rose-50 hover:bg-rose-100 transition-colors">
+            初期展示状態にリセット
+          </button>
+        </div>
+
+        <div id="manage-slot-list" class="space-y-2.5">
+          <!-- JSで生成 -->
+        </div>
+      </div>
+
+      <!-- タブ3：展覧会・管理者設定 -->
+      <div id="curate-tab-settings" class="p-6 overflow-y-auto custom-scroll flex-1 hidden space-y-6">
+        <!-- 展覧会タイトル設定 -->
+        <form onsubmit="saveExhibitionSettings(event)" class="space-y-4 bg-neutral-50 p-5 rounded-2xl border border-neutral-200/70">
+          <div>
+            <h4 class="text-sm font-semibold text-neutral-900">展覧会の基本情報</h4>
+            <p class="text-[11px] text-neutral-500 mt-0.5">変更すると、閲覧中の全鑑賞者の画面タイトルに即時反映されます。</p>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label for="setting-title" class="block text-xs font-semibold text-neutral-700 mb-1">展覧会タイトル</label>
+              <input id="setting-title" type="text" required maxlength="40" class="w-full text-xs bg-white border border-neutral-300 rounded-xl px-3 py-2.5 focus:outline-none focus:border-neutral-900">
+            </div>
+            <div>
+              <label for="setting-subtitle" class="block text-xs font-semibold text-neutral-700 mb-1">サブタイトル</label>
+              <input id="setting-subtitle" type="text" maxlength="60" class="w-full text-xs bg-white border border-neutral-300 rounded-xl px-3 py-2.5 focus:outline-none focus:border-neutral-900">
+            </div>
+          </div>
+          <div class="flex justify-end">
+            <button type="submit" class="px-5 py-2 rounded-xl text-xs font-medium bg-neutral-900 text-white hover:bg-neutral-700 transition-colors">
+              展覧会情報を更新
+            </button>
+          </div>
+        </form>
+
+        <!-- 管理者ID・パスワード変更 -->
+        <form onsubmit="saveAdminCredentials(event)" class="space-y-4 bg-neutral-50 p-5 rounded-2xl border border-neutral-200/70">
+          <div>
+            <h4 class="text-sm font-semibold text-neutral-900">管理者ID・パスワードの変更</h4>
+            <p class="text-[11px] text-neutral-500 mt-0.5">パスワードはSHA-256でハッシュ化され、クラウドデータベースに安全に保存されます。</p>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label for="setting-admin-id" class="block text-xs font-semibold text-neutral-700 mb-1">新しい管理者ID</label>
+              <input id="setting-admin-id" type="text" required minlength="3" maxlength="30" class="w-full text-xs bg-white border border-neutral-300 rounded-xl px-3 py-2.5 focus:outline-none focus:border-neutral-900">
+            </div>
+            <div>
+              <label for="setting-admin-pw" class="block text-xs font-semibold text-neutral-700 mb-1">新しいパスワード（6文字以上）</label>
+              <input id="setting-admin-pw" type="password" required minlength="6" maxlength="64" placeholder="••••••••" class="w-full text-xs bg-white border border-neutral-300 rounded-xl px-3 py-2.5 focus:outline-none focus:border-neutral-900">
+            </div>
+          </div>
+          <div class="flex justify-end">
+            <button type="submit" class="px-5 py-2 rounded-xl text-xs font-medium bg-amber-600 text-white hover:bg-amber-700 transition-colors">
+              管理者認証情報を更新
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- 管理者ログインモーダル -->
+  <div id="admin-login-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+    <div class="bg-white text-neutral-900 rounded-3xl shadow-2xl max-w-sm w-full p-6 sm:p-7 animate-fade-in">
+      <div class="flex items-center justify-between mb-4">
+        <div>
+          <p class="text-[10px] tracking-widest uppercase text-neutral-400">ADMINISTRATOR ACCESS</p>
+          <h3 class="text-lg font-semibold mt-0.5">管理者ログイン</h3>
+        </div>
+        <button onclick="closeAdminLoginModal()" class="w-8 h-8 rounded-full hover:bg-neutral-100 flex items-center justify-center text-neutral-500" aria-label="閉じる">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <form id="admin-login-form" onsubmit="handleAdminLogin(event)" class="space-y-4">
+        <div>
+          <label for="login-id" class="block text-xs font-semibold text-neutral-700 mb-1">管理者ID</label>
+          <input id="login-id" type="text" required autocomplete="username" placeholder="admin" class="w-full text-xs border border-neutral-300 rounded-xl px-3.5 py-2.5 focus:outline-none focus:border-neutral-900">
+        </div>
+        <div>
+          <label for="login-pw" class="block text-xs font-semibold text-neutral-700 mb-1">パスワード</label>
+          <input id="login-pw" type="password" required autocomplete="current-password" placeholder="••••••••" class="w-full text-xs border border-neutral-300 rounded-xl px-3.5 py-2.5 focus:outline-none focus:border-neutral-900">
+        </div>
+        <p id="login-error-msg" class="hidden text-xs text-rose-600 font-medium"></p>
+
+        <div class="bg-neutral-50 rounded-xl p-3 border border-neutral-200/70 text-[11px] text-neutral-500 leading-relaxed">
+          <span class="font-semibold text-neutral-700">初回ログイン用デフォルト情報:</span><br>
+          ID: <code class="bg-neutral-200/70 px-1.5 py-0.5 rounded text-neutral-800">admin</code> / PW: <code class="bg-neutral-200/70 px-1.5 py-0.5 rounded text-neutral-800">gallery2026</code><br>
+          <span class="text-[10px] opacity-80">※ ログイン後の「管理設定」から変更できます。</span>
+        </div>
+
+        <button type="submit" class="w-full py-2.5 rounded-xl bg-neutral-900 text-white text-xs font-medium hover:bg-neutral-700 transition-colors shadow-sm">
+          管理者としてログイン
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- 初期起動時の操作ガイドオーバーレイ -->
+  <div id="guide-overlay" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/55 backdrop-blur-sm">
+    <div class="bg-white text-neutral-900 rounded-3xl shadow-2xl max-w-md w-full p-7 sm:p-8 text-center animate-fade-in">
+      <p class="text-[10px] tracking-[0.25em] uppercase text-neutral-400">WELCOME TO VIRTUAL GALLERY</p>
+      <h2 id="guide-exhibition-title" class="font-serif text-2xl sm:text-3xl font-semibold mt-1.5 tracking-wide">MUSEUM OF FORMS</h2>
+      <p class="text-xs text-neutral-500 mt-2 leading-relaxed">
+        ブラウザ上で自由に歩き回り、リアルタイムで共有される作品を鑑賞・コメントできるバーチャル現代美術館です。
+      </p>
+
+      <div class="mt-6 space-y-3 text-left bg-neutral-50 rounded-2xl p-4 text-xs border border-neutral-100">
+        <div class="flex items-start gap-3">
+          <span class="w-6 h-6 rounded-lg bg-neutral-900 text-white flex items-center justify-center shrink-0 text-[11px] font-semibold">1</span>
+          <div>
+            <p class="font-semibold text-neutral-800">視点を動かして鑑賞</p>
+            <p class="text-neutral-500 mt-0.5">ドラッグ（スワイプ）で周囲を見渡し、WASD / 矢印キーで自由に歩けます。</p>
+          </div>
+        </div>
+        <div class="flex items-start gap-3">
+          <span class="w-6 h-6 rounded-lg bg-neutral-900 text-white flex items-center justify-center shrink-0 text-[11px] font-semibold">2</span>
+          <div>
+            <p class="font-semibold text-neutral-800">ガイド移動＆作品クリック</p>
+            <p class="text-neutral-500 mt-0.5">下部バーで各作品の正面へ滑らかに移動。作品をクリックすると解説閲覧や感想投稿ができます。</p>
+          </div>
+        </div>
+        <div class="flex items-start gap-3">
+          <span class="w-6 h-6 rounded-lg bg-neutral-900 text-white flex items-center justify-center shrink-0 text-[11px] font-semibold">3</span>
+          <div>
+            <p class="font-semibold text-neutral-800">リアルタイム展示＆共有</p>
+            <p class="text-neutral-500 mt-0.5">管理者が鍵アイコンからログインして作品を公開すると、全鑑賞者の画面へ即座に反映されます。</p>
+          </div>
+        </div>
+      </div>
+
+      <button onclick="closeGuideOverlay()" class="mt-6 w-full py-3 rounded-2xl bg-neutral-900 text-white text-sm font-medium hover:bg-neutral-700 transition-colors shadow-md">
+        鑑賞をはじめる
+      </button>
+    </div>
+  </div>
+
+  <!-- カスタム確認ダイアログ（confirm()の代替） -->
+  <div id="confirm-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+    <div class="bg-white text-neutral-900 rounded-2xl shadow-2xl max-w-sm w-full p-6 animate-fade-in">
+      <h4 id="confirm-title" class="text-base font-semibold">確認</h4>
+      <p id="confirm-message" class="text-xs text-neutral-600 mt-2 leading-relaxed"></p>
+      <div class="flex justify-end gap-2 mt-5">
+        <button onclick="closeConfirmModal()" class="px-4 py-2 rounded-xl text-xs font-medium text-neutral-600 hover:bg-neutral-100">キャンセル</button>
+        <button id="confirm-ok-btn" class="px-4 py-2 rounded-xl text-xs font-medium bg-rose-600 text-white hover:bg-rose-700">実行する</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- トースト通知（alert()の代替） -->
+  <div id="toast-container" class="fixed top-20 right-4 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import {
+      getFirestore, doc, setDoc, deleteDoc, addDoc, updateDoc,
+      onSnapshot, collection, getDocs, increment
+    } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+    /* ==========================================================================
+       ★ 公開用設定エリア（ここだけ書き換えればOK！）
+       ==========================================================================
+       ご自身の環境で公開する場合は、Firebase Console で取得した
+       firebaseConfig の中身（{ ... }）を下の USER_FIREBASE_CONFIG に
+       そのまま上書き貼り付けしてください。
+       （※ null のままの場合はプレビュー／オフライン動作になります）
+    ========================================================================== */
+    const USER_GALLERY_ID = 'my-gallery-01'; // 展覧会ごとの識別ID（半角英数字・ハイフン推奨）
+
+    const USER_FIREBASE_CONFIG = {
+      apiKey: "AIzaSyBrFe3l_3ZqiRvIpClhOT6to33oh-QevMM",
+      authDomain: "virtual-gallery-7ef41.firebaseapp.com",
+      databaseURL: "https://virtual-gallery-7ef41-default-rtdb.firebaseio.com",
+      projectId: "virtual-gallery-7ef41",
+      storageBucket: "virtual-gallery-7ef41.firebasestorage.app",
+      messagingSenderId: "527096242062",
+      appId: "1:527096242062:web:e15953be2bc056c1610edf",
+      measurementId: "G-1SS6G30VM3"
+    };
+
+    /* ==========================================================================
+       1. Firebase 初期化・定数・状態管理
+    ========================================================================== */
+    const hasUserFirebaseConfig = USER_FIREBASE_CONFIG && typeof USER_FIREBASE_CONFIG === 'object' && !!USER_FIREBASE_CONFIG.apiKey;
+    const appId = hasUserFirebaseConfig
+      ? USER_GALLERY_ID
+      : (typeof __app_id !== 'undefined' ? __app_id : USER_GALLERY_ID);
+    let app = null;
+    let db = null;
+    let auth = null;
+    let firebaseUser = null;
+    let isCloudConnected = false;
+
+    // 初期管理者ID・パスワード（初回シード用）
+    const DEFAULT_ADMIN_ID = 'admin';
+    const DEFAULT_ADMIN_PW = 'gallery2026';
+
+    // 展示室の寸法 (幅18m x 奥行24m x 高さ5.2m)
+    const ROOM = { width: 18, depth: 24, height: 5.2 };
+
+    // 全8か所の展示スロット定義
+    const SLOTS_CONFIG = [
+      { id: 0, label: 'SLOT 01 — 左壁・手前', pos: [-8.92, 2.05, 6.2],  rotY: Math.PI / 2,  normal: [1, 0, 0] },
+      { id: 1, label: 'SLOT 02 — 左壁・中央', pos: [-8.92, 2.05, 0.0],  rotY: Math.PI / 2,  normal: [1, 0, 0] },
+      { id: 2, label: 'SLOT 03 — 左壁・奥',   pos: [-8.92, 2.05, -6.2], rotY: Math.PI / 2,  normal: [1, 0, 0] },
+      { id: 3, label: 'SLOT 04 — 正面壁・左', pos: [-3.6,  2.05, -11.92], rotY: 0,          normal: [0, 0, 1] },
+      { id: 4, label: 'SLOT 05 — 正面壁・右', pos: [3.6,   2.05, -11.92], rotY: 0,          normal: [0, 0, 1] },
+      { id: 5, label: 'SLOT 06 — 右壁・奥',   pos: [8.92,  2.05, -6.2], rotY: -Math.PI / 2, normal: [-1, 0, 0] },
+      { id: 6, label: 'SLOT 07 — 右壁・中央', pos: [8.92,  2.05, 0.0],  rotY: -Math.PI / 2, normal: [-1, 0, 0] },
+      { id: 7, label: 'SLOT 08 — 右壁・手前', pos: [8.92,  2.05, 6.2],  rotY: -Math.PI / 2, normal: [-1, 0, 0] }
+    ];
+
+    const FRAME_LABELS = {
+      black: 'マットブラック',
+      wood: 'ナチュラルウッド',
+      white: 'ホワイト',
+      none: 'フレームなし'
+    };
+
+    // アプリケーション状態
+    let artworks = new Array(SLOTS_CONFIG.length).fill(null); // 全スロットデータ（公開＋下書き含む）
+    let allComments = [];            // 全コメント一覧（Firestoreリアルタイム同期）
+    let defaultImageCache = {};      // 初期ジェネレーティブアートのDataURLキャッシュ
+    let sessionLikedSlots = new Set(); // 同一セッション内でのいいね状態
+
+    let galleryConfig = {
+      title: 'MUSEUM OF FORMS',
+      subtitle: 'VIRTUAL EXHIBITION ARCHIVE',
+      adminId: DEFAULT_ADMIN_ID,
+      adminPwHash: null
+    };
+
+    let isAdmin = false;             // 管理者ログイン状態
+    let currentViewMode = '3d';      // '3d' | '2d'
+    let currentTheme = 'white';      // 'white' | 'night' | 'cyber'
+    let focusedSlotIndex = -1;       // -1 = 全体見渡し、0..7 = 作品スロット
+    let activeDetailSlot = null;     // 詳細モーダルで開いているスロットID
+    let pendingUploadDataUrl = null; // 展示フォームで選択中の画像DataURL
+
+    // Three.js 関連オブジェクト
+    let scene, camera, renderer, raycaster;
+    let artworkGroups = [];
+    let clickableMeshes = [];
+    let roomMaterials = {};
+    let lightObjects = {};
+    let cyberAccents = [];
+
+    // カメラ制御＆補間状態
+    const camState = {
+      pos: new THREE.Vector3(0, 1.65, 9.2),
+      yaw: 0,
+      pitch: -0.02,
+      targetYaw: 0,
+      targetPitch: -0.02,
+      isAutoMoving: false,
+      autoTargetPos: new THREE.Vector3(),
+      autoTargetYaw: 0,
+      autoTargetPitch: 0
+    };
+
+    const keysPressed = {};
+    let isPointerDown = false;
+    let pointerDownPos = { x: 0, y: 0 };
+    let lastPointerPos = { x: 0, y: 0 };
+    let hasDragged = false;
+    const mouseNDC = new THREE.Vector2(-99, -99);
+
+    /* ==========================================================================
+       2. SHA-256 ハッシュ計算ユーティリティ
+    ========================================================================== */
+    async function sha256Hex(text) {
+      try {
+        const enc = new TextEncoder().encode(text);
+        const hashBuffer = await crypto.subtle.digest('SHA-256', enc);
+        return Array.from(new Uint8Array(hashBuffer))
+          .map(b => b.toString(16).padStart(2, '0'))
+          .join('');
+      } catch (e) {
+        // crypto.subtle 非対応環境向けフォールバック
+        let h = 2166136261;
+        for (let i = 0; i < text.length; i++) {
+          h ^= text.charCodeAt(i);
+          h = Math.imul(h, 16777619);
+        }
+        return 'fb_' + (h >>> 0).toString(16);
+      }
+    }
+
+    /* ==========================================================================
+       3. 初期展示作品（HTML5 Canvasによるジェネレーティブ現代アート8点）
+    ========================================================================== */
+    function generateDefaultArtworks() {
+      const specs = [
+        {
+          id: 0,
+          title: '静寂の幾何学 No.4',
+          artist: '高橋 凛 / Rin Takahashi',
+          year: '2025',
+          medium: 'ジェネレーティブ・プリント、アーカイブ紙',
+          frame: 'black',
+          description: 'バウハウスの構成主義に着想を得て、黄金比と原色の均衡を探求した作品。最小限の直線と円弧が織りなす緊張感の中に、建築的な静けさを宿らせています。',
+          likes: 24,
+          draw: (ctx, w, h) => {
+            ctx.fillStyle = '#F4F1EA';
+            ctx.fillRect(0, 0, w, h);
+            ctx.strokeStyle = 'rgba(0,0,0,0.05)';
+            ctx.lineWidth = 2;
+            for (let x = 80; x < w; x += 80) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke(); }
+            for (let y = 80; y < h; y += 80) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke(); }
+            ctx.fillStyle = '#1E2A3A';
+            ctx.fillRect(w * 0.14, h * 0.16, w * 0.44, h * 0.52);
+            ctx.fillStyle = '#D94336';
+            ctx.beginPath();
+            ctx.arc(w * 0.62, h * 0.46, w * 0.24, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#E2A83B';
+            ctx.fillRect(w * 0.24, h * 0.74, w * 0.58, h * 0.08);
+            ctx.strokeStyle = '#111111';
+            ctx.lineWidth = 6;
+            ctx.beginPath();
+            ctx.moveTo(w * 0.14, h * 0.68);
+            ctx.lineTo(w * 0.86, h * 0.18);
+            ctx.stroke();
+          }
+        },
+        {
+          id: 1,
+          title: '蒼の残響 / Echoes in Cerulean',
+          artist: '佐伯 悠 / Yu Saeki',
+          year: '2026',
+          medium: 'アクリル、顔料、リネンキャンバス',
+          frame: 'white',
+          description: '夜明け前の水平線に漂う大気の層を、色彩のグラデーションだけで表現したカラーフィールド作品。鑑賞者の立つ距離によって青の深みが変化します。',
+          likes: 31,
+          draw: (ctx, w, h) => {
+            const grad = ctx.createLinearGradient(0, 0, 0, h);
+            grad.addColorStop(0, '#0D253F');
+            grad.addColorStop(0.38, '#1B5E8A');
+            grad.addColorStop(0.68, '#62A8C9');
+            grad.addColorStop(0.86, '#C8DFEA');
+            grad.addColorStop(1, '#F1ECE1');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, w, h);
+            const glow = ctx.createRadialGradient(w * 0.5, h * 0.62, 10, w * 0.5, h * 0.62, w * 0.65);
+            glow.addColorStop(0, 'rgba(255,255,255,0.42)');
+            glow.addColorStop(1, 'rgba(255,255,255,0)');
+            ctx.fillStyle = glow;
+            ctx.fillRect(0, 0, w, h);
+            for (let i = 0; i < 4500; i++) {
+              ctx.fillStyle = Math.random() > 0.5 ? 'rgba(255,255,255,0.035)' : 'rgba(0,0,0,0.035)';
+              ctx.fillRect(Math.random() * w, Math.random() * h, 3, 3);
+            }
+          }
+        },
+        {
+          id: 2,
+          title: '都市の断片 / Fragment 2026',
+          artist: 'K. MORITA',
+          year: '2026',
+          medium: 'アルゴリズミック・ドローイング、アルミマウント',
+          frame: 'black',
+          description: '現代都市のインフラや光の軌跡をデータ構造として再構成。無数の細い線とシアンブルーのアクセントが、情報空間の奥行きを描き出します。',
+          likes: 19,
+          draw: (ctx, w, h) => {
+            ctx.fillStyle = '#0F131A';
+            ctx.fillRect(0, 0, w, h);
+            for (let i = 0; i < 28; i++) {
+              const bx = ((i * 137) % 8) * (w / 8) + 20;
+              const by = ((i * 89) % 10) * (h / 10) + 20;
+              const bw = 60 + ((i * 53) % 160);
+              const bh = 40 + ((i * 71) % 140);
+              ctx.fillStyle = i % 5 === 0 ? 'rgba(0, 240, 255, 0.16)' : 'rgba(255, 255, 255, 0.05)';
+              ctx.fillRect(bx, by, bw, bh);
+              ctx.strokeStyle = i % 5 === 0 ? 'rgba(0, 240, 255, 0.65)' : 'rgba(255, 255, 255, 0.18)';
+              ctx.lineWidth = 2;
+              ctx.strokeRect(bx, by, bw, bh);
+            }
+            ctx.strokeStyle = '#00F0FF';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(w * 0.1, h * 0.78);
+            ctx.lineTo(w * 0.48, h * 0.78);
+            ctx.lineTo(w * 0.62, h * 0.32);
+            ctx.lineTo(w * 0.9, h * 0.32);
+            ctx.stroke();
+          }
+        },
+        {
+          id: 3,
+          title: '光と影の変奏 / Variations of Light',
+          artist: 'Elena Vance',
+          year: '2025',
+          medium: 'ミクストメディア、マットペーパー',
+          frame: 'wood',
+          description: '重なり合う半透明のフォルムが生み出す柔らかな陰影。美術館の天窓から降り注ぐ自然光の移ろいを、静謐な抽象空間として定着させました。',
+          likes: 42,
+          draw: (ctx, w, h) => {
+            ctx.fillStyle = '#EFECE6';
+            ctx.fillRect(0, 0, w, h);
+            const circles = [
+              { x: 0.36, y: 0.38, r: 0.32, color: 'rgba(218, 165, 128, 0.62)' },
+              { x: 0.64, y: 0.48, r: 0.28, color: 'rgba(65, 92, 108, 0.55)' },
+              { x: 0.48, y: 0.68, r: 0.24, color: 'rgba(195, 118, 92, 0.52)' }
+            ];
+            circles.forEach(c => {
+              ctx.fillStyle = c.color;
+              ctx.beginPath();
+              ctx.arc(w * c.x, h * c.y, w * c.r, 0, Math.PI * 2);
+              ctx.fill();
+            });
+            ctx.strokeStyle = 'rgba(30,30,30,0.5)';
+            ctx.lineWidth = 2.5;
+            ctx.beginPath();
+            ctx.arc(w * 0.5, h * 0.5, w * 0.36, -0.4, 2.5);
+            ctx.stroke();
+          }
+        },
+        {
+          id: 4,
+          title: '波紋のアルゴリズム / Harmonic Field',
+          artist: '藤原 朔 / Saku Fujiwara',
+          year: '2026',
+          medium: 'デジタル・プロッター、インク',
+          frame: 'black',
+          description: '数学的な干渉縞（モアレ）を極細の線で描き出したオプ・アート作品。静止した平面でありながら、視線を動かすと微かな振動が立ち現れます。',
+          likes: 28,
+          draw: (ctx, w, h) => {
+            ctx.fillStyle = '#FAFAFA';
+            ctx.fillRect(0, 0, w, h);
+            ctx.strokeStyle = '#18181B';
+            ctx.lineWidth = 2.2;
+            for (let r = 24; r < w * 0.72; r += 16) {
+              ctx.beginPath();
+              ctx.arc(w * 0.42, h * 0.46, r, 0, Math.PI * 2);
+              ctx.stroke();
+            }
+            ctx.strokeStyle = 'rgba(24, 24, 27, 0.68)';
+            for (let r = 24; r < w * 0.68; r += 16) {
+              ctx.beginPath();
+              ctx.arc(w * 0.58, h * 0.54, r, 0, Math.PI * 2);
+              ctx.stroke();
+            }
+          }
+        },
+        {
+          id: 5,
+          title: '余白の対話 / Dialogue in Ma',
+          artist: '水谷 澄 / Sumi Mizutani',
+          year: '2025',
+          medium: '墨、金箔、和紙パネル',
+          frame: 'wood',
+          description: '日本美学における「間（ま）」を現代抽象へと昇華させた一作。力強い墨のストロークと控えめな金の光沢が、鑑賞者の内面に静かな余韻を残します。',
+          likes: 37,
+          draw: (ctx, w, h) => {
+            ctx.fillStyle = '#F7F3E8';
+            ctx.fillRect(0, 0, w, h);
+            const inkGrad = ctx.createRadialGradient(w * 0.45, h * 0.48, 20, w * 0.45, h * 0.48, w * 0.42);
+            inkGrad.addColorStop(0, 'rgba(25,25,25,0.88)');
+            inkGrad.addColorStop(0.55, 'rgba(40,40,40,0.45)');
+            inkGrad.addColorStop(1, 'rgba(40,40,40,0)');
+            ctx.fillStyle = inkGrad;
+            ctx.beginPath();
+            ctx.ellipse(w * 0.46, h * 0.48, w * 0.34, h * 0.16, -0.35, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = '#181818';
+            ctx.lineWidth = 42;
+            ctx.lineCap = 'round';
+            ctx.beginPath();
+            ctx.moveTo(w * 0.18, h * 0.62);
+            ctx.quadraticCurveTo(w * 0.48, h * 0.36, w * 0.8, h * 0.42);
+            ctx.stroke();
+            ctx.fillStyle = '#C9A24B';
+            ctx.fillRect(w * 0.66, h * 0.62, w * 0.14, h * 0.14);
+          }
+        },
+        {
+          id: 6,
+          title: 'スペクトラム・ドリフト',
+          artist: 'N. KOBAYASHI',
+          year: '2026',
+          medium: 'ライトジェネレーション・プリント',
+          frame: 'none',
+          description: 'プリズムを通過した光が空間を漂う瞬間を捉えたデジタルアート。フレームを外すことで、色彩が壁面へと溶け出すような浮遊感を演出しています。',
+          likes: 22,
+          draw: (ctx, w, h) => {
+            const bg = ctx.createLinearGradient(0, 0, w, h);
+            bg.addColorStop(0, '#141124');
+            bg.addColorStop(0.5, '#2A1D4E');
+            bg.addColorStop(1, '#102A3A');
+            ctx.fillStyle = bg;
+            ctx.fillRect(0, 0, w, h);
+            const blobs = [
+              { x: 0.28, y: 0.34, r: 0.42, c: 'rgba(255, 88, 150, 0.55)' },
+              { x: 0.72, y: 0.38, r: 0.44, c: 'rgba(0, 240, 255, 0.5)' },
+              { x: 0.52, y: 0.72, r: 0.45, c: 'rgba(130, 92, 255, 0.55)' }
+            ];
+            blobs.forEach(b => {
+              const g = ctx.createRadialGradient(w * b.x, h * b.y, 10, w * b.x, h * b.y, w * b.r);
+              g.addColorStop(0, b.c);
+              g.addColorStop(1, 'rgba(0,0,0,0)');
+              ctx.fillStyle = g;
+              ctx.fillRect(0, 0, w, h);
+            });
+            ctx.strokeStyle = 'rgba(255,255,255,0.45)';
+            ctx.lineWidth = 2;
+            for (let i = 0; i < 6; i++) {
+              ctx.beginPath();
+              ctx.moveTo(0, h * (0.25 + i * 0.1));
+              ctx.bezierCurveTo(w * 0.35, h * (0.15 + i * 0.12), w * 0.65, h * (0.45 + i * 0.08), w, h * (0.3 + i * 0.1));
+              ctx.stroke();
+            }
+          }
+        },
+        {
+          id: 7,
+          title: '境界線の記憶 / Horizon Study',
+          artist: 'Claire Moreau',
+          year: '2024',
+          medium: '油彩、石膏下地、パネル',
+          frame: 'white',
+          description: '霧に包まれた静かな地平線をモノクロームの微細な階調で描いた抽象風景。視覚的な要素を削ぎ落とすことで、見る人それぞれの記憶を呼び起こします。',
+          likes: 29,
+          draw: (ctx, w, h) => {
+            const g1 = ctx.createLinearGradient(0, 0, 0, h * 0.58);
+            g1.addColorStop(0, '#D4D6D9');
+            g1.addColorStop(1, '#F2F3F4');
+            ctx.fillStyle = g1;
+            ctx.fillRect(0, 0, w, h * 0.58);
+            const g2 = ctx.createLinearGradient(0, h * 0.58, 0, h);
+            g2.addColorStop(0, '#5A6068');
+            g2.addColorStop(0.2, '#3D424A');
+            g2.addColorStop(1, '#1E2126');
+            ctx.fillStyle = g2;
+            ctx.fillRect(0, h * 0.58, w, h * 0.42);
+            const fog = ctx.createLinearGradient(0, h * 0.5, 0, h * 0.66);
+            fog.addColorStop(0, 'rgba(242,243,244,0)');
+            fog.addColorStop(0.5, 'rgba(242,243,244,0.65)');
+            fog.addColorStop(1, 'rgba(61,66,74,0)');
+            ctx.fillStyle = fog;
+            ctx.fillRect(0, h * 0.5, w, h * 0.16);
+          }
+        }
+      ];
+
+      return specs.map(spec => {
+        const canvas = document.createElement('canvas');
+        const isLandscape = (spec.id === 3 || spec.id === 7);
+        canvas.width = isLandscape ? 960 : 760;
+        canvas.height = isLandscape ? 720 : 960;
+        const ctx = canvas.getContext('2d');
+        spec.draw(ctx, canvas.width, canvas.height);
+
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.88);
+        defaultImageCache[spec.id] = {
+          dataUrl,
+          aspect: canvas.width / canvas.height
+        };
+
+        return {
+          slotId: spec.id,
+          title: spec.title,
+          artist: spec.artist,
+          year: spec.year,
+          medium: spec.medium,
+          frame: spec.frame,
+          description: spec.description,
+          likes: spec.likes,
+          published: true,
+          isCustomImage: false,
+          customImage: null,
+          aspect: canvas.width / canvas.height
+        };
+      });
+    }
+
+    function getArtworkImageUrl(art) {
+      if (!art) return '';
+      if (art.isCustomImage && art.customImage) return art.customImage;
+      if (defaultImageCache[art.slotId]) return defaultImageCache[art.slotId].dataUrl;
+      return defaultImageCache[0] ? defaultImageCache[0].dataUrl : '';
+    }
+
+    // 現在のロール（鑑賞者 or 管理者）で表示すべき作品か判定
+    function isArtworkVisibleToCurrentUser(art) {
+      if (!art) return false;
+      return isAdmin ? true : (art.published !== false);
+    }
+
+    /* ==========================================================================
+       4. Firebase 認証・Firestore リアルタイム同期
+    ========================================================================== */
+    function getPublicDocRef(colName, docId) {
+      return doc(db, 'artifacts', appId, 'public', 'data', colName, docId);
+    }
+
+    function getPublicColRef(colName) {
+      return collection(db, 'artifacts', appId, 'public', 'data', colName);
+    }
+
+    function setSyncStatus(state, text) {
+      const dot = document.getElementById('sync-status-dot');
+      const label = document.getElementById('sync-status-text');
+      if (!dot || !label) return;
+      label.textContent = text;
+      dot.className = 'w-1.5 h-1.5 rounded-full ' + (
+        state === 'live' ? 'bg-emerald-500' :
+        state === 'syncing' ? 'bg-amber-400 animate-pulse' : 'bg-rose-500'
+      );
+    }
+
+    async function initFirebaseAndSync() {
+      const defaults = generateDefaultArtworks();
+      galleryConfig.adminPwHash = await sha256Hex(DEFAULT_ADMIN_PW);
+
+      // 専用エリアの設定を優先し、未設定なら環境変数（プレビュー用）を参照
+      const rawFirebaseConfig = hasUserFirebaseConfig
+        ? USER_FIREBASE_CONFIG
+        : (typeof __firebase_config !== 'undefined' ? __firebase_config : null);
+
+      // Firebase設定の存在確認
+      if (!rawFirebaseConfig) {
+        console.warn('Firebase設定が見つからないためローカルプレビューモードで起動します。');
+        artworks = defaults;
+        if (scene) buildAllArtworkSlots();
+        updateBottomNavUI();
+        setSyncStatus('error', 'OFFLINE');
+        hideCloudLoading();
+        return;
+      }
+
+      try {
+        const firebaseConfig = typeof rawFirebaseConfig === 'string'
+          ? JSON.parse(rawFirebaseConfig)
+          : rawFirebaseConfig;
+
+        app = initializeApp(firebaseConfig);
+        auth = getAuth(app);
+        db = getFirestore(app);
+
+        setSyncStatus('syncing', 'CONNECTING');
+        document.getElementById('cloud-loading-text').textContent = '認証およびクラウドデータを確認中...';
+
+        // RULE 3: 必ず先に認証を完了させる（タイムアウト保護付き）
+        const authPromise = (typeof __initial_auth_token !== 'undefined' && __initial_auth_token)
+          ? signInWithCustomToken(auth, __initial_auth_token)
+          : signInAnonymously(auth);
+
+        const timeoutPromise = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('AUTH_TIMEOUT')), 8000)
+        );
+
+        const cred = await Promise.race([authPromise, timeoutPromise]);
+        firebaseUser = cred.user;
+        isCloudConnected = true;
+
+        // 初回データが空であれば初期展示8点と設定をFirestoreへ自動シード
+        await seedInitialDataIfEmpty(defaults);
+
+        // リアルタイム購読を開始
+        startRealtimeListeners();
+        setSyncStatus('live', 'LIVE');
+      } catch (err) {
+        console.warn('Firebase接続フォールバック:', err);
+        artworks = defaults;
+        if (scene) buildAllArtworkSlots();
+        updateBottomNavUI();
+        setSyncStatus('error', 'LOCAL');
+
+        const errCode = err && (err.code || err.message) ? String(err.code || err.message) : '';
+        if (errCode.includes('auth/configuration-not-found') || errCode.includes('auth/operation-not-allowed')) {
+          showToast('Firebaseで「匿名認証」が有効化されていないため、ローカル展示モードで起動しました。', 'error');
+        } else if (errCode.includes('permission-denied')) {
+          showToast('Firestoreのセキュリティルール設定を確認してください（ローカル表示中）。', 'error');
+        } else {
+          showToast('ローカル展示モードで起動しました（初期作品8点を表示中）。');
+        }
+      } finally {
+        hideCloudLoading();
+      }
+    }
+
+    async function seedInitialDataIfEmpty(defaults) {
+      if (!firebaseUser || !db) return;
+      try {
+        const configSnap = await getDocs(getPublicColRef('gallery_config'));
+        if (configSnap.empty) {
+          await setDoc(getPublicDocRef('gallery_config', 'main'), {
+            title: galleryConfig.title,
+            subtitle: galleryConfig.subtitle,
+            adminId: DEFAULT_ADMIN_ID,
+            adminPwHash: galleryConfig.adminPwHash,
+            initialized: true,
+            updatedAt: Date.now()
+          });
+
+          // 8点の初期ジェネレーティブアートを軽量ドキュメントとして保存
+          const tasks = defaults.map(art =>
+            setDoc(getPublicDocRef('gallery_artworks', `slot_${art.slotId}`), art)
+          );
+          await Promise.all(tasks);
+        }
+      } catch (err) {
+        console.warn('初期シードチェック時のエラー:', err);
+        throw err;
+      }
+    }
+
+    function startRealtimeListeners() {
+      if (!firebaseUser || !db) return;
+
+      // 1) 展覧会設定 & 管理者認証情報のリアルタイム購読
+      onSnapshot(
+        getPublicDocRef('gallery_config', 'main'),
+        (snap) => {
+          if (snap.exists()) {
+            const data = snap.data();
+            galleryConfig.title = data.title || 'MUSEUM OF FORMS';
+            galleryConfig.subtitle = data.subtitle || 'VIRTUAL EXHIBITION ARCHIVE';
+            galleryConfig.adminId = data.adminId || DEFAULT_ADMIN_ID;
+            if (data.adminPwHash) galleryConfig.adminPwHash = data.adminPwHash;
+            applyExhibitionConfigUI();
+          }
+        },
+        (err) => {
+          console.error('設定購読エラー:', err);
+          setSyncStatus('error', 'SYNC ERR');
+        }
+      );
+
+      // 2) 全展示スロットのリアルタイム購読（RULE 2: 複雑クエリ不使用）
+      onSnapshot(
+        getPublicColRef('gallery_artworks'),
+        (snapshot) => {
+          const nextArtworks = new Array(SLOTS_CONFIG.length).fill(null);
+          snapshot.forEach(docSnap => {
+            const data = docSnap.data();
+            if (typeof data.slotId === 'number' && data.slotId >= 0 && data.slotId < SLOTS_CONFIG.length) {
+              if (!data.isCustomImage && defaultImageCache[data.slotId]) {
+                data.aspect = defaultImageCache[data.slotId].aspect;
+              }
+              nextArtworks[data.slotId] = data;
+            }
+          });
+          artworks = nextArtworks;
+          if (scene) buildAllArtworkSlots();
+          if (currentViewMode === '2d') renderCatalogGrid();
+          updateBottomNavUI();
+
+          // 管理パネルや詳細モーダルが開いていれば最新状態に同期
+          if (!document.getElementById('curate-modal').classList.contains('hidden')) {
+            renderManageSlotList();
+          }
+          if (activeDetailSlot !== null && !document.getElementById('detail-modal').classList.contains('hidden')) {
+            const currentArt = artworks[activeDetailSlot];
+            if (isArtworkVisibleToCurrentUser(currentArt)) {
+              refreshDetailModalData(activeDetailSlot);
+            } else {
+              closeDetailModal();
+            }
+          }
+        },
+        (err) => {
+          console.error('作品購読エラー:', err);
+          setSyncStatus('error', 'SYNC ERR');
+        }
+      );
+
+      // 3) 鑑賞者コメントのリアルタイム購読（メモリ上でフィルタ・ソート）
+      onSnapshot(
+        getPublicColRef('gallery_comments'),
+        (snapshot) => {
+          const list = [];
+          snapshot.forEach(docSnap => {
+            list.push({ id: docSnap.id, ...docSnap.data() });
+          });
+          list.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+          allComments = list;
+
+          if (activeDetailSlot !== null && !document.getElementById('detail-modal').classList.contains('hidden')) {
+            renderDetailComments(activeDetailSlot);
+          }
+        },
+        (err) => {
+          console.error('コメント購読エラー:', err);
+        }
+      );
+    }
+
+    function applyExhibitionConfigUI() {
+      document.getElementById('header-exhibition-title').textContent = galleryConfig.title;
+      document.getElementById('header-exhibition-subtitle').textContent = galleryConfig.subtitle;
+      document.getElementById('guide-exhibition-title').textContent = galleryConfig.title;
+      document.title = `${galleryConfig.title} — バーチャル展覧会`;
+    }
+
+    function hideCloudLoading() {
+      const el = document.getElementById('cloud-loading');
+      if (!el) return;
+      el.style.opacity = '0';
+      setTimeout(() => el.classList.add('hidden'), 320);
+    }
+
+    /* ==========================================================================
+       5. 管理者ログイン・権限UI切替
+    ========================================================================== */
+    function openAdminLoginModal() {
+      document.getElementById('login-error-msg').classList.add('hidden');
+      document.getElementById('login-id').value = '';
+      document.getElementById('login-pw').value = '';
+      const modal = document.getElementById('admin-login-modal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+      hideTooltip();
+    }
+
+    function closeAdminLoginModal() {
+      const modal = document.getElementById('admin-login-modal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    async function handleAdminLogin(e) {
+      e.preventDefault();
+      const inputId = document.getElementById('login-id').value.trim();
+      const inputPw = document.getElementById('login-pw').value;
+      const errEl = document.getElementById('login-error-msg');
+
+      const inputHash = await sha256Hex(inputPw);
+      if (inputId === galleryConfig.adminId && inputHash === galleryConfig.adminPwHash) {
+        isAdmin = true;
+        closeAdminLoginModal();
+        updateAdminRoleUI();
+        showToast('管理者としてログインしました。作品の設置・公開管理が可能です。');
+      } else {
+        errEl.textContent = '管理者IDまたはパスワードが正しくありません。';
+        errEl.classList.remove('hidden');
+      }
+    }
+
+    function logoutAdmin() {
+      isAdmin = false;
+      closeCurateModal();
+      updateAdminRoleUI();
+      showToast('管理者からログアウトし、鑑賞者モードに戻りました。');
+    }
+
+    function updateAdminRoleUI() {
+      const badge = document.getElementById('admin-mode-badge');
+      const btnCurate = document.getElementById('btn-admin-curate');
+      const btnLogout = document.getElementById('btn-admin-logout');
+      const btnLogin = document.getElementById('btn-admin-login');
+      const btnCatalogCurate = document.getElementById('btn-catalog-curate');
+
+      if (isAdmin) {
+        badge.classList.remove('hidden');
+        btnCurate.classList.remove('hidden');
+        btnCurate.classList.add('flex');
+        btnLogout.classList.remove('hidden');
+        btnLogout.classList.add('flex');
+        btnLogin.classList.add('hidden');
+        btnCatalogCurate.classList.remove('hidden');
+      } else {
+        badge.classList.add('hidden');
+        btnCurate.classList.add('hidden');
+        btnCurate.classList.remove('flex');
+        btnLogout.classList.add('hidden');
+        btnLogout.classList.remove('flex');
+        btnLogin.classList.remove('hidden');
+        btnCatalogCurate.classList.add('hidden');
+      }
+
+      // 下書き作品の表示/非表示を即座に3D空間・カタログへ反映
+      if (scene) buildAllArtworkSlots();
+      if (currentViewMode === '2d') renderCatalogGrid();
+      updateBottomNavUI();
+
+      if (activeDetailSlot !== null && !document.getElementById('detail-modal').classList.contains('hidden')) {
+        const art = artworks[activeDetailSlot];
+        if (!isArtworkVisibleToCurrentUser(art)) {
+          closeDetailModal();
+        } else {
+          refreshDetailModalData(activeDetailSlot);
+        }
+      }
+    }
+
+    /* ==========================================================================
+       6. Three.js 3Dギャラリー空間の構築
+    ========================================================================== */
+    function createFloorTexture(baseColor, lineColor, noiseAlpha) {
+      const c = document.createElement('canvas');
+      c.width = 512;
+      c.height = 512;
+      const ctx = c.getContext('2d');
+      ctx.fillStyle = baseColor;
+      ctx.fillRect(0, 0, 512, 512);
+
+      // 微細なコンクリート・石材ノイズ
+      for (let i = 0; i < 6000; i++) {
+        ctx.fillStyle = Math.random() > 0.5
+          ? `rgba(255,255,255,${noiseAlpha})`
+          : `rgba(0,0,0,${noiseAlpha})`;
+        ctx.fillRect(Math.random() * 512, Math.random() * 512, 2, 2);
+      }
+      // タイル目地
+      ctx.strokeStyle = lineColor;
+      ctx.lineWidth = 2;
+      ctx.strokeRect(0, 0, 256, 256);
+      ctx.strokeRect(256, 0, 256, 256);
+      ctx.strokeRect(0, 256, 256, 256);
+      ctx.strokeRect(256, 256, 256, 256);
+
+      const tex = new THREE.CanvasTexture(c);
+      tex.wrapS = THREE.RepeatWrapping;
+      tex.wrapT = THREE.RepeatWrapping;
+      tex.repeat.set(6, 8);
+      return tex;
+    }
+
+    function initThreeJS() {
+      const container = document.getElementById('canvas-container');
+      scene = new THREE.Scene();
+      scene.background = new THREE.Color(0xf4f4f2);
+      scene.fog = new THREE.Fog(0xf4f4f2, 18, 42);
+
+      camera = new THREE.PerspectiveCamera(58, window.innerWidth / window.innerHeight, 0.1, 100);
+      camera.rotation.order = 'YXZ';
+      camera.position.copy(camState.pos);
+
+      renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      renderer.toneMappingExposure = 1.05;
+      container.appendChild(renderer.domElement);
+
+      raycaster = new THREE.Raycaster();
+
+      buildGalleryArchitecture();
+      buildGalleryLighting();
+      buildAllArtworkSlots();
+      applyGalleryTheme(currentTheme, false);
+
+      setupControls(container);
+      window.addEventListener('resize', onWindowResize);
+    }
+
+    function buildGalleryArchitecture() {
+      const { width, depth, height } = ROOM;
+
+      // 床
+      const floorTexLight = createFloorTexture('#e6e3dd', 'rgba(0,0,0,0.06)', 0.03);
+      const floorTexDark = createFloorTexture('#1e2128', 'rgba(255,255,255,0.04)', 0.025);
+      roomMaterials.floorTexLight = floorTexLight;
+      roomMaterials.floorTexDark = floorTexDark;
+
+      roomMaterials.floor = new THREE.MeshStandardMaterial({
+        map: floorTexLight,
+        roughness: 0.72,
+        metalness: 0.06
+      });
+      const floor = new THREE.Mesh(new THREE.PlaneGeometry(width, depth), roomMaterials.floor);
+      floor.rotation.x = -Math.PI / 2;
+      floor.receiveShadow = true;
+      scene.add(floor);
+
+      // 壁マテリアル
+      roomMaterials.wall = new THREE.MeshStandardMaterial({
+        color: 0xfafaf8,
+        roughness: 0.9,
+        metalness: 0.02
+      });
+
+      const addWall = (w, h, x, y, z, rotY) => {
+        const mesh = new THREE.Mesh(new THREE.PlaneGeometry(w, h), roomMaterials.wall);
+        mesh.position.set(x, y, z);
+        mesh.rotation.y = rotY;
+        mesh.receiveShadow = true;
+        scene.add(mesh);
+      };
+      // 奥・手前・左・右の4壁
+      addWall(width, height, 0, height / 2, -depth / 2, 0);
+      addWall(width, height, 0, height / 2, depth / 2, Math.PI);
+      addWall(depth, height, -width / 2, height / 2, 0, Math.PI / 2);
+      addWall(depth, height, width / 2, height / 2, 0, -Math.PI / 2);
+
+      // 巾木（ベースボード）
+      roomMaterials.baseboard = new THREE.MeshStandardMaterial({ color: 0xdad8d2, roughness: 0.6 });
+      const bbH = 0.14, bbD = 0.04;
+      const bbFront = new THREE.Mesh(new THREE.BoxGeometry(width, bbH, bbD), roomMaterials.baseboard);
+      bbFront.position.set(0, bbH / 2, -depth / 2 + bbD / 2);
+      scene.add(bbFront);
+      const bbBack = bbFront.clone();
+      bbBack.position.set(0, bbH / 2, depth / 2 - bbD / 2);
+      scene.add(bbBack);
+      const bbLeft = new THREE.Mesh(new THREE.BoxGeometry(bbD, bbH, depth), roomMaterials.baseboard);
+      bbLeft.position.set(-width / 2 + bbD / 2, bbH / 2, 0);
+      scene.add(bbLeft);
+      const bbRight = bbLeft.clone();
+      bbRight.position.set(width / 2 - bbD / 2, bbH / 2, 0);
+      scene.add(bbRight);
+
+      // モダンサイバー用の繊細なシアン・アクセントライン（初期は非表示）
+      const cyberMat = new THREE.MeshBasicMaterial({ color: 0x00F0FF });
+      const addCyberStrip = (w, h, d, x, y, z) => {
+        const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), cyberMat);
+        m.position.set(x, y, z);
+        m.visible = false;
+        scene.add(m);
+        cyberAccents.push(m);
+      };
+      // 床際のシアンライン
+      addCyberStrip(width - 0.1, 0.025, 0.025, 0, 0.15, -depth / 2 + 0.03);
+      addCyberStrip(0.025, 0.025, depth - 0.1, -width / 2 + 0.03, 0.15, 0);
+      addCyberStrip(0.025, 0.025, depth - 0.1, width / 2 - 0.03, 0.15, 0);
+      // 天井スリットのシアンライン
+      addCyberStrip(8.4, 0.03, 0.03, 0, height - 0.06, -7.2);
+      addCyberStrip(8.4, 0.03, 0.03, 0, height - 0.06, 7.2);
+      addCyberStrip(0.03, 0.03, 14.4, -4.2, height - 0.06, 0);
+      addCyberStrip(0.03, 0.03, 14.4, 4.2, height - 0.06, 0);
+
+      // 天井
+      roomMaterials.ceiling = new THREE.MeshStandardMaterial({ color: 0xf2f2ef, roughness: 0.95 });
+      const ceiling = new THREE.Mesh(new THREE.PlaneGeometry(width, depth), roomMaterials.ceiling);
+      ceiling.position.set(0, height, 0);
+      ceiling.rotation.x = Math.PI / 2;
+      scene.add(ceiling);
+
+      // 中央の天窓（スカイライト・ライトボックス）
+      roomMaterials.skylight = new THREE.MeshBasicMaterial({ color: 0xffffff });
+      const skylight = new THREE.Mesh(new THREE.PlaneGeometry(7.6, 13.6), roomMaterials.skylight);
+      skylight.position.set(0, height - 0.03, 0);
+      skylight.rotation.x = Math.PI / 2;
+      scene.add(skylight);
+
+      // 天井トラックライトレール（建築ディテール）
+      const railMat = new THREE.MeshStandardMaterial({ color: 0x333333, roughness: 0.4, metalness: 0.5 });
+      const railLeft = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.06, 17), railMat);
+      railLeft.position.set(-6.4, height - 0.1, 0);
+      scene.add(railLeft);
+      const railRight = railLeft.clone();
+      railRight.position.x = 6.4;
+      scene.add(railRight);
+      const railFront = new THREE.Mesh(new THREE.BoxGeometry(11, 0.06, 0.08), railMat);
+      railFront.position.set(0, height - 0.1, -9.2);
+      scene.add(railFront);
+
+      // 中央の美術館ベンチ（2脚）
+      const benchWoodMat = new THREE.MeshStandardMaterial({ color: 0xc8a982, roughness: 0.65 });
+      const benchLegMat = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.4, metalness: 0.6 });
+      const createBench = (zPos) => {
+        const g = new THREE.Group();
+        const seat = new THREE.Mesh(new THREE.BoxGeometry(3.2, 0.1, 0.85), benchWoodMat);
+        seat.position.y = 0.46;
+        seat.castShadow = true;
+        seat.receiveShadow = true;
+        g.add(seat);
+
+        [-1.3, 1.3].forEach(lx => {
+          const leg = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.44, 0.72), benchLegMat);
+          leg.position.set(lx, 0.22, 0);
+          leg.castShadow = true;
+          g.add(leg);
+        });
+        g.position.set(0, 0, zPos);
+        scene.add(g);
+      };
+      createBench(-2.6);
+      createBench(3.2);
+    }
+
+    function buildGalleryLighting() {
+      // 環境光＆半球光
+      lightObjects.ambient = new THREE.AmbientLight(0xffffff, 0.58);
+      scene.add(lightObjects.ambient);
+
+      lightObjects.hemi = new THREE.HemisphereLight(0xffffff, 0xd8d5ce, 0.45);
+      lightObjects.hemi.position.set(0, ROOM.height, 0);
+      scene.add(lightObjects.hemi);
+
+      // メインディレクショナルライト（天窓からの柔らかな光）
+      lightObjects.mainDir = new THREE.DirectionalLight(0xfffdf8, 0.35);
+      lightObjects.mainDir.position.set(2, 10, 4);
+      lightObjects.mainDir.castShadow = true;
+      lightObjects.mainDir.shadow.mapSize.width = 1024;
+      lightObjects.mainDir.shadow.mapSize.height = 1024;
+      scene.add(lightObjects.mainDir);
+
+      // 各展示スロット向けのスポットライト群
+      lightObjects.spots = [];
+      const fixtureMat = new THREE.MeshStandardMaterial({ color: 0x262626, roughness: 0.35, metalness: 0.6 });
+
+      SLOTS_CONFIG.forEach(slot => {
+        const lightPos = new THREE.Vector3(
+          slot.pos[0] + slot.normal[0] * 2.5,
+          ROOM.height - 0.22,
+          slot.pos[2] + slot.normal[2] * 2.5
+        );
+
+        // 器具の3Dモデル
+        const lamp = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.08, 0.22, 12), fixtureMat);
+        lamp.position.copy(lightPos);
+        lamp.lookAt(slot.pos[0], slot.pos[1], slot.pos[2]);
+        lamp.rotateX(Math.PI / 2);
+        scene.add(lamp);
+
+        // スポットライト本体
+        const spot = new THREE.SpotLight(0xfff6e8, 0.8, 12, Math.PI / 4.2, 0.65, 1.2);
+        spot.position.copy(lightPos);
+        spot.target.position.set(slot.pos[0], slot.pos[1], slot.pos[2]);
+        scene.add(spot);
+        scene.add(spot.target);
+        lightObjects.spots.push(spot);
+      });
+    }
+
+    // 1スロット分の作品3Dメッシュを構築・更新
+    function buildArtworkSlotMesh(slotIndex) {
+      // 既存メッシュがあればクリーンアップ
+      if (artworkGroups[slotIndex]) {
+        const oldGroup = artworkGroups[slotIndex];
+        oldGroup.traverse(obj => {
+          if (obj.geometry) obj.geometry.dispose();
+          if (obj.material) {
+            if (Array.isArray(obj.material)) {
+              obj.material.forEach(m => { if (m.map) m.map.dispose(); m.dispose(); });
+            } else {
+              if (obj.material.map) obj.material.map.dispose();
+              obj.material.dispose();
+            }
+          }
+        });
+        scene.remove(oldGroup);
+      }
+
+      const slot = SLOTS_CONFIG[slotIndex];
+      const art = artworks[slotIndex];
+      const group = new THREE.Group();
+      group.position.set(slot.pos[0], slot.pos[1], slot.pos[2]);
+      group.rotation.y = slot.rotY;
+
+      // 鑑賞者モードでは「空き」または「非公開（下書き）」は空の壁として何も表示しない
+      if (!isArtworkVisibleToCurrentUser(art)) {
+        if (isAdmin && !art) {
+          // 管理者モードかつ空きスロットの場合のみ配置ガイド枠を表示
+          const emptyFrame = new THREE.Mesh(
+            new THREE.PlaneGeometry(1.7, 2.1),
+            new THREE.MeshBasicMaterial({ color: 0xcccccc, transparent: true, opacity: 0.22 })
+          );
+          emptyFrame.userData = { slotIndex, isEmptySlot: true };
+          group.add(emptyFrame);
+
+          const borderGeo = new THREE.EdgesGeometry(new THREE.PlaneGeometry(1.7, 2.1));
+          const borderLine = new THREE.LineSegments(borderGeo, new THREE.LineBasicMaterial({ color: 0x999999 }));
+          group.add(borderLine);
+        }
+        artworkGroups[slotIndex] = group;
+        scene.add(group);
+        refreshClickableMeshes();
+        return;
+      }
+
+      const isDraft = art.published === false;
+
+      // アスペクト比に合わせて作品サイズを決定（最大幅 2.5m / 最大高さ 2.25m）
+      const aspect = art.aspect || 0.8;
+      let artW, artH;
+      if (aspect >= 1) {
+        artW = Math.min(2.55, 2.0 * aspect);
+        artH = artW / aspect;
+        if (artH > 2.1) { artH = 2.1; artW = artH * aspect; }
+      } else {
+        artH = 2.15;
+        artW = artH * aspect;
+      }
+
+      // 額縁スタイル
+      const hasFrame = art.frame !== 'none';
+      const matPad = hasFrame ? 0.11 : 0;
+      const frameBorder = hasFrame ? 0.075 : 0;
+      const frameDepth = hasFrame ? 0.08 : 0.035;
+
+      if (hasFrame) {
+        let frameColor = 0x1a1a1a;
+        let frameRough = 0.55;
+        if (art.frame === 'wood') { frameColor = 0xb99163; frameRough = 0.72; }
+        else if (art.frame === 'white') { frameColor = 0xf4f4f2; frameRough = 0.45; }
+
+        const outerW = artW + (matPad + frameBorder) * 2;
+        const outerH = artH + (matPad + frameBorder) * 2;
+
+        const frameMesh = new THREE.Mesh(
+          new THREE.BoxGeometry(outerW, outerH, frameDepth),
+          new THREE.MeshStandardMaterial({
+            color: frameColor, roughness: frameRough, metalness: 0.05,
+            transparent: isDraft, opacity: isDraft ? 0.65 : 1.0
+          })
+        );
+        frameMesh.position.z = frameDepth / 2;
+        frameMesh.castShadow = !isDraft;
+        frameMesh.receiveShadow = true;
+        group.add(frameMesh);
+
+        const matMesh = new THREE.Mesh(
+          new THREE.PlaneGeometry(artW + matPad * 2, artH + matPad * 2),
+          new THREE.MeshStandardMaterial({
+            color: 0xfafaf8, roughness: 0.92,
+            transparent: isDraft, opacity: isDraft ? 0.7 : 1.0
+          })
+        );
+        matMesh.position.z = frameDepth + 0.004;
+        group.add(matMesh);
+      } else {
+        const panelMesh = new THREE.Mesh(
+          new THREE.BoxGeometry(artW, artH, frameDepth),
+          new THREE.MeshStandardMaterial({
+            color: 0x222222, roughness: 0.6,
+            transparent: isDraft, opacity: isDraft ? 0.65 : 1.0
+          })
+        );
+        panelMesh.position.z = frameDepth / 2;
+        panelMesh.castShadow = !isDraft;
+        group.add(panelMesh);
+      }
+
+      // 作品画像テクスチャ
+      const imgUrl = getArtworkImageUrl(art);
+      const artMat = new THREE.MeshStandardMaterial({
+        color: 0xffffff,
+        roughness: 0.42,
+        metalness: 0.04,
+        transparent: isDraft,
+        opacity: isDraft ? 0.62 : 1.0
+      });
+
+      const img = new Image();
+      img.onload = () => {
+        const tex = new THREE.Texture(img);
+        tex.encoding = THREE.sRGBEncoding;
+        tex.needsUpdate = true;
+        artMat.map = tex;
+        artMat.needsUpdate = true;
+      };
+      img.src = imgUrl;
+
+      const artPlane = new THREE.Mesh(new THREE.PlaneGeometry(artW, artH), artMat);
+      artPlane.position.z = frameDepth + 0.008;
+      artPlane.userData = { slotIndex, isArtwork: true };
+      group.add(artPlane);
+
+      // 壁面のキャプションプレート
+      const plateW = 0.34, plateH = 0.2;
+      const plateCanvas = document.createElement('canvas');
+      plateCanvas.width = 256;
+      plateCanvas.height = 150;
+      const pCtx = plateCanvas.getContext('2d');
+      pCtx.fillStyle = isDraft ? '#fef3c7' : '#f8f8f6';
+      pCtx.fillRect(0, 0, 256, 150);
+      pCtx.fillStyle = '#18181b';
+      pCtx.font = 'bold 20px sans-serif';
+      pCtx.fillText((art.title || '').slice(0, 12), 16, 46);
+      pCtx.fillStyle = '#52525b';
+      pCtx.font = '15px sans-serif';
+      pCtx.fillText((art.artist || '').slice(0, 16), 16, 82);
+      pCtx.fillStyle = isDraft ? '#b45309' : '#a1a1aa';
+      pCtx.font = 'bold 13px sans-serif';
+      pCtx.fillText(isDraft ? `［下書き・非公開］ NO.0${slotIndex + 1}` : `${art.year || ''}  |  NO.0${slotIndex + 1}`, 16, 118);
+
+      const plateTex = new THREE.CanvasTexture(plateCanvas);
+      const plateMesh = new THREE.Mesh(
+        new THREE.BoxGeometry(plateW, plateH, 0.015),
+        new THREE.MeshStandardMaterial({ map: plateTex, roughness: 0.6 })
+      );
+      const offsetX = (artW / 2) + matPad + frameBorder + 0.32;
+      plateMesh.position.set(offsetX, -artH / 2 + 0.16, 0.01);
+      group.add(plateMesh);
+
+      artworkGroups[slotIndex] = group;
+      scene.add(group);
+      refreshClickableMeshes();
+    }
+
+    function buildAllArtworkSlots() {
+      for (let i = 0; i < SLOTS_CONFIG.length; i++) {
+        buildArtworkSlotMesh(i);
+      }
+    }
+
+    function refreshClickableMeshes() {
+      clickableMeshes = [];
+      artworkGroups.forEach(group => {
+        if (!group) return;
+        group.traverse(obj => {
+          if (obj.isMesh && (obj.userData.isArtwork || obj.userData.isEmptySlot)) {
+            clickableMeshes.push(obj);
+          }
+        });
+      });
+    }
+
+    /* ==========================================================================
+       7. 空間ライティング・テーマ切り替え
+    ========================================================================== */
+    function setGalleryTheme(theme) {
+      currentTheme = theme;
+      applyGalleryTheme(theme, true);
+    }
+
+    function applyGalleryTheme(theme, notify) {
+      // bodyクラス更新
+      document.body.classList.remove('theme-white', 'theme-night', 'theme-cyber');
+      document.body.classList.add(`theme-${theme}`);
+
+      // ヘッダーボタン状態更新
+      ['white', 'night', 'cyber'].forEach(t => {
+        const btn = document.getElementById(`btn-theme-${t}`);
+        if (!btn) return;
+        if (t === theme) {
+          btn.className = 'px-2.5 py-1.5 rounded-xl transition-all ' +
+            (theme === 'cyber' ? 'bg-cyan-500 text-neutral-950 font-semibold' :
+             theme === 'night' ? 'bg-white text-neutral-900' : 'bg-neutral-900 text-white');
+        } else {
+          btn.className = 'px-2.5 py-1.5 rounded-xl transition-all hover:opacity-80';
+        }
+      });
+
+      const dot = document.getElementById('brand-dot');
+      if (dot) {
+        dot.style.backgroundColor = theme === 'cyber' ? '#00F0FF' : (theme === 'night' ? '#ffffff' : '#171717');
+        dot.style.boxShadow = theme === 'cyber' ? '0 0 10px #00F0FF' : 'none';
+      }
+
+      if (!scene) return;
+
+      if (theme === 'white') {
+        scene.background.setHex(0xf4f4f2);
+        scene.fog.color.setHex(0xf4f4f2);
+        roomMaterials.wall.color.setHex(0xfafaf8);
+        roomMaterials.ceiling.color.setHex(0xf2f2ef);
+        roomMaterials.baseboard.color.setHex(0xdad8d2);
+        roomMaterials.skylight.color.setHex(0xffffff);
+        roomMaterials.floor.map = roomMaterials.floorTexLight;
+        roomMaterials.floor.needsUpdate = true;
+
+        lightObjects.ambient.color.setHex(0xffffff);
+        lightObjects.ambient.intensity = 0.62;
+        lightObjects.hemi.intensity = 0.45;
+        lightObjects.mainDir.intensity = 0.35;
+        lightObjects.spots.forEach(s => { s.color.setHex(0xfff6e8); s.intensity = 0.72; });
+        cyberAccents.forEach(m => m.visible = false);
+      } else if (theme === 'night') {
+        scene.background.setHex(0x0c0e12);
+        scene.fog.color.setHex(0x0c0e12);
+        roomMaterials.wall.color.setHex(0x1f232b);
+        roomMaterials.ceiling.color.setHex(0x12151a);
+        roomMaterials.baseboard.color.setHex(0x101216);
+        roomMaterials.skylight.color.setHex(0x1a1f29);
+        roomMaterials.floor.map = roomMaterials.floorTexDark;
+        roomMaterials.floor.needsUpdate = true;
+
+        lightObjects.ambient.color.setHex(0x9fb2cc);
+        lightObjects.ambient.intensity = 0.18;
+        lightObjects.hemi.intensity = 0.12;
+        lightObjects.mainDir.intensity = 0.05;
+        lightObjects.spots.forEach(s => { s.color.setHex(0xffe9c6); s.intensity = 1.95; });
+        cyberAccents.forEach(m => m.visible = false);
+      } else if (theme === 'cyber') {
+        scene.background.setHex(0xf0f6fa);
+        scene.fog.color.setHex(0xf0f6fa);
+        roomMaterials.wall.color.setHex(0xf7fafc);
+        roomMaterials.ceiling.color.setHex(0xeef5f9);
+        roomMaterials.baseboard.color.setHex(0xdbe7ee);
+        roomMaterials.skylight.color.setHex(0xeaffff);
+        roomMaterials.floor.map = roomMaterials.floorTexLight;
+        roomMaterials.floor.needsUpdate = true;
+
+        lightObjects.ambient.color.setHex(0xe8fbff);
+        lightObjects.ambient.intensity = 0.62;
+        lightObjects.hemi.intensity = 0.42;
+        lightObjects.mainDir.intensity = 0.32;
+        lightObjects.spots.forEach(s => { s.color.setHex(0xd6fcff); s.intensity = 0.9; });
+        cyberAccents.forEach(m => m.visible = true);
+      }
+
+      if (notify) {
+        const names = { white: 'ホワイトキューブ', night: 'ナイトミュージアム', cyber: 'モダンサイバー' };
+        showToast(`空間テーマを「${names[theme]}」に切り替えました`);
+      }
+    }
+
+    /* ==========================================================================
+       6. カメラ操作・歩行移動・衝突判定・ガイドナビゲーション
+    ========================================================================== */
+    function setupControls(container) {
+      // マウス・タッチ両対応のポインターイベント
+      container.addEventListener('pointerdown', (e) => {
+        if (currentViewMode !== '3d') return;
+        isPointerDown = true;
+        hasDragged = false;
+        pointerDownPos = { x: e.clientX, y: e.clientY };
+        lastPointerPos = { x: e.clientX, y: e.clientY };
+      });
+
+      window.addEventListener('pointermove', (e) => {
+        if (currentViewMode !== '3d') return;
+
+        // ホバー判定用NDC座標
+        mouseNDC.x = (e.clientX / window.innerWidth) * 2 - 1;
+        mouseNDC.y = -(e.clientY / window.innerHeight) * 2 + 1;
+
+        if (isPointerDown) {
+          const dx = e.clientX - lastPointerPos.x;
+          const dy = e.clientY - lastPointerPos.y;
+          const totalDist = Math.hypot(e.clientX - pointerDownPos.x, e.clientY - pointerDownPos.y);
+
+          if (totalDist > 5) {
+            hasDragged = true;
+            camState.isAutoMoving = false; // 手動操作で自動移動を解除
+          }
+
+          const sensitivity = 0.0032;
+          camState.targetYaw += dx * sensitivity;
+          camState.targetPitch = Math.max(-0.55, Math.min(0.65, camState.targetPitch + dy * sensitivity));
+
+          lastPointerPos = { x: e.clientX, y: e.clientY };
+          hideTooltip();
+        } else {
+          updateHoverTooltip(e.clientX, e.clientY);
+        }
+      });
+
+      window.addEventListener('pointerup', (e) => {
+        if (!isPointerDown) return;
+        isPointerDown = false;
+
+        // ドラッグではなくクリックだった場合、作品をクリック判定
+        if (!hasDragged && currentViewMode === '3d') {
+          handleCanvasClick(e.clientX, e.clientY);
+        }
+      });
+
+      // キーボード歩行入力
+      window.addEventListener('keydown', (e) => {
+        // フォーム入力中は無視
+        if (['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)) return;
+        if (currentViewMode !== '3d') return;
+        const code = e.code;
+        if (['KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(code)) {
+          keysPressed[code] = true;
+          camState.isAutoMoving = false;
+        }
+        if (code === 'Escape') {
+          closeDetailModal();
+          closeCurateModal();
+          closeLightbox();
+        }
+      });
+
+      window.addEventListener('keyup', (e) => {
+        keysPressed[e.code] = false;
+      });
+    }
+
+    function updateHoverTooltip(clientX, clientY) {
+      if (!raycaster || !camera || isAnyModalOpen()) {
+        hideTooltip();
+        return;
+      }
+      raycaster.setFromCamera(mouseNDC, camera);
+      const hits = raycaster.intersectObjects(clickableMeshes, false);
+      const container = document.getElementById('canvas-container');
+
+      if (hits.length > 0 && hits[0].distance < 15) {
+        const slotIdx = hits[0].object.userData.slotIndex;
+        const art = artworks[slotIdx];
+        container.classList.add('pointer-hover');
+
+        const tip = document.getElementById('hover-tooltip');
+        if (art) {
+          const draftTag = art.published === false ? '［下書き］' : '';
+          document.getElementById('tooltip-title').textContent = draftTag + art.title;
+          document.getElementById('tooltip-artist').textContent = art.artist;
+        } else {
+          document.getElementById('tooltip-title').textContent = `空きスロット (${SLOTS_CONFIG[slotIdx].label})`;
+          document.getElementById('tooltip-artist').textContent = 'クリックして作品を展示できます';
+        }
+        tip.style.left = Math.min(clientX + 16, window.innerWidth - 235) + 'px';
+        tip.style.top = Math.min(clientY + 16, window.innerHeight - 90) + 'px';
+        tip.classList.remove('hidden');
+      } else {
+        container.classList.remove('pointer-hover');
+        hideTooltip();
+      }
+    }
+
+    function hideTooltip() {
+      document.getElementById('hover-tooltip').classList.add('hidden');
+    }
+
+    function handleCanvasClick(clientX, clientY) {
+      if (isAnyModalOpen()) return;
+      mouseNDC.x = (clientX / window.innerWidth) * 2 - 1;
+      mouseNDC.y = -(clientY / window.innerHeight) * 2 + 1;
+      raycaster.setFromCamera(mouseNDC, camera);
+
+      const hits = raycaster.intersectObjects(clickableMeshes, false);
+      if (hits.length > 0) {
+        const slotIdx = hits[0].object.userData.slotIndex;
+        if (artworks[slotIdx] && isArtworkVisibleToCurrentUser(artworks[slotIdx])) {
+          openDetailModal(slotIdx);
+        } else if (isAdmin) {
+          openCurateModal(slotIdx);
+        }
+      }
+    }
+
+    // 壁・中央ベンチとの衝突判定付き移動
+    function applyCollisionBounds(nextPos) {
+      const margin = 1.15;
+      nextPos.x = Math.max(-ROOM.width / 2 + margin, Math.min(ROOM.width / 2 - margin, nextPos.x));
+      nextPos.z = Math.max(-ROOM.depth / 2 + margin, Math.min(ROOM.depth / 2 - margin, nextPos.z));
+
+      // ベンチ2脚との簡易AABB衝突回避
+      const benches = [
+        { x: 0, z: -2.6, hw: 2.05, hd: 0.9 },
+        { x: 0, z: 3.2,  hw: 2.05, hd: 0.9 }
+      ];
+      benches.forEach(b => {
+        if (Math.abs(nextPos.x - b.x) < b.hw && Math.abs(nextPos.z - b.z) < b.hd) {
+          const dx = b.hw - Math.abs(nextPos.x - b.x);
+          const dz = b.hd - Math.abs(nextPos.z - b.z);
+          if (dx < dz) {
+            nextPos.x = nextPos.x < b.x ? b.x - b.hw : b.x + b.hw;
+          } else {
+            nextPos.z = nextPos.z < b.z ? b.z - b.hd : b.z + b.hd;
+          }
+        }
+      });
+    }
+
+    // 最短角度補間
+    function lerpAngle(current, target, t) {
+      let diff = ((target - current + Math.PI) % (Math.PI * 2)) - Math.PI;
+      if (diff < -Math.PI) diff += Math.PI * 2;
+      return current + diff * t;
+    }
+
+    // 指定スロットの正面へカメラを滑らかに移動
+    function moveToSlot(slotIndex) {
+      const slot = SLOTS_CONFIG[slotIndex];
+      if (!slot) return;
+
+      focusedSlotIndex = slotIndex;
+      const dist = 3.45;
+      camState.autoTargetPos.set(
+        slot.pos[0] + slot.normal[0] * dist,
+        1.72,
+        slot.pos[2] + slot.normal[2] * dist
+      );
+
+      // カメラが作品中心を向くヨー角を計算
+      const lookDirX = slot.pos[0] - camState.autoTargetPos.x;
+      const lookDirZ = slot.pos[2] - camState.autoTargetPos.z;
+      camState.autoTargetYaw = Math.atan2(-lookDirX, -lookDirZ);
+      camState.autoTargetPitch = 0.05;
+      camState.isAutoMoving = true;
+
+      updateBottomNavUI();
+    }
+
+    // 全体見渡しポジションへ移動
+    function moveToOverview() {
+      focusedSlotIndex = -1;
+      camState.autoTargetPos.set(0, 1.85, 9.4);
+      camState.autoTargetYaw = 0;
+      camState.autoTargetPitch = -0.03;
+      camState.isAutoMoving = true;
+      updateBottomNavUI();
+    }
+
+    // 前/次の作品へ移動（現在のロールで表示可能な作品のみ巡回）
+    function navigateArtwork(direction) {
+      const visible = artworks
+        .map((a, idx) => isArtworkVisibleToCurrentUser(a) ? idx : -1)
+        .filter(idx => idx !== -1);
+      if (visible.length === 0) {
+        showToast('現在公開されている作品はありません。');
+        return;
+      }
+      if (focusedSlotIndex === -1) {
+        moveToSlot(direction > 0 ? visible[0] : visible[visible.length - 1]);
+        return;
+      }
+      const currPos = visible.indexOf(focusedSlotIndex);
+      let nextPos = currPos === -1 ? 0 : (currPos + direction + visible.length) % visible.length;
+      moveToSlot(visible[nextPos]);
+    }
+
+    function openCurrentFocusedArtwork() {
+      if (focusedSlotIndex >= 0 && isArtworkVisibleToCurrentUser(artworks[focusedSlotIndex])) {
+        openDetailModal(focusedSlotIndex);
+      }
+    }
+
+    function updateBottomNavUI() {
+      const slotLabel = document.getElementById('nav-slot-label');
+      const titleEl = document.getElementById('nav-artwork-title');
+      if (focusedSlotIndex === -1 || !isArtworkVisibleToCurrentUser(artworks[focusedSlotIndex])) {
+        slotLabel.textContent = 'GALLERY OVERVIEW';
+        titleEl.textContent = '全体見渡し';
+      } else {
+        const art = artworks[focusedSlotIndex];
+        slotLabel.textContent = `SLOT 0${focusedSlotIndex + 1} / 08` + (art.published === false ? ' (下書き)' : '');
+        titleEl.textContent = art.title;
+      }
+    }
+
+    function onWindowResize() {
+      if (!camera || !renderer) return;
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    }
+
+    /* ==========================================================================
+       7. メインアニメーションループ
+    ========================================================================== */
+    const clock = new THREE.Clock();
+
+    function animate() {
+      requestAnimationFrame(animate);
+      const dt = Math.min(clock.getDelta(), 0.05);
+
+      if (currentViewMode === '3d') {
+        if (camState.isAutoMoving) {
+          // ガイド移動のスムーズ補間
+          const factor = 1 - Math.exp(-4.2 * dt);
+          camState.pos.lerp(camState.autoTargetPos, factor);
+          camState.yaw = lerpAngle(camState.yaw, camState.autoTargetYaw, factor);
+          camState.pitch += (camState.autoTargetPitch - camState.pitch) * factor;
+          camState.targetYaw = camState.yaw;
+          camState.targetPitch = camState.pitch;
+
+          if (camState.pos.distanceTo(camState.autoTargetPos) < 0.03) {
+            camState.isAutoMoving = false;
+          }
+        } else {
+          // 視点回転の滑らかな追従
+          const rotFactor = 1 - Math.exp(-12 * dt);
+          camState.yaw += (camState.targetYaw - camState.yaw) * rotFactor;
+          camState.pitch += (camState.targetPitch - camState.pitch) * rotFactor;
+
+          // キーボード歩行移動
+          const speed = 4.6 * dt;
+          const forward = new THREE.Vector3(-Math.sin(camState.yaw), 0, -Math.cos(camState.yaw));
+          const right = new THREE.Vector3(Math.cos(camState.yaw), 0, -Math.sin(camState.yaw));
+          const moveVec = new THREE.Vector3();
+
+          if (keysPressed['KeyW'] || keysPressed['ArrowUp']) moveVec.add(forward);
+          if (keysPressed['KeyS'] || keysPressed['ArrowDown']) moveVec.sub(forward);
+          if (keysPressed['KeyD'] || keysPressed['ArrowRight']) moveVec.add(right);
+          if (keysPressed['KeyA'] || keysPressed['ArrowLeft']) moveVec.sub(right);
+
+          if (moveVec.lengthSq() > 0) {
+            moveVec.normalize().multiplyScalar(speed);
+            camState.pos.add(moveVec);
+            applyCollisionBounds(camState.pos);
+          }
+        }
+
+        camera.position.copy(camState.pos);
+        camera.rotation.y = camState.yaw;
+        camera.rotation.x = camState.pitch;
+
+        renderer.render(scene, camera);
+      }
+    }
+
+    /* ==========================================================================
+       8. 2Dカタログ一覧ビュー & 表示モード切替
+    ========================================================================== */
+    function setViewMode(mode) {
+      currentViewMode = mode;
+      const catalogEl = document.getElementById('catalog-view');
+      const guideNav = document.getElementById('bottom-guide-nav');
+      const hints = document.getElementById('hud-hints');
+      const btn3d = document.getElementById('btn-mode-3d');
+      const btn2d = document.getElementById('btn-mode-2d');
+
+      if (mode === '2d') {
+        renderCatalogGrid();
+        catalogEl.classList.remove('hidden');
+        guideNav.classList.add('hidden');
+        hints.classList.add('md:hidden');
+        hideTooltip();
+
+        btn2d.className = 'px-3 py-1.5 rounded-xl transition-all bg-neutral-900 text-white';
+        btn3d.className = 'px-3 py-1.5 rounded-xl transition-all hover:opacity-80';
+      } else {
+        catalogEl.classList.add('hidden');
+        guideNav.classList.remove('hidden');
+        hints.classList.remove('md:hidden');
+
+        btn3d.className = 'px-3 py-1.5 rounded-xl transition-all bg-neutral-900 text-white';
+        btn2d.className = 'px-3 py-1.5 rounded-xl transition-all hover:opacity-80';
+      }
+    }
+
+    function renderCatalogGrid() {
+      const grid = document.getElementById('catalog-grid');
+      const activeArts = artworks.filter(isArtworkVisibleToCurrentUser);
+      document.getElementById('catalog-count').textContent = `全 ${activeArts.length} 作品展示中`;
+
+      if (activeArts.length === 0) {
+        grid.innerHTML = `
+          <div class="col-span-full py-20 text-center text-neutral-400">
+            <p class="text-sm">現在公開されている作品はありません。</p>
+            ${isAdmin ? '<button onclick="openCurateModal()" class="mt-4 px-5 py-2.5 rounded-xl bg-neutral-900 text-white text-xs font-medium">＋ 作品を展示する</button>' : ''}
+          </div>
+        `;
+        return;
+      }
+
+      grid.innerHTML = activeArts.map(art => {
+        const imgUrl = getArtworkImageUrl(art);
+        const isDraft = art.published === false;
+        const liked = sessionLikedSlots.has(art.slotId);
+        return `
+          <article class="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all border ${isDraft ? 'border-amber-300 ring-1 ring-amber-200' : 'border-neutral-200/70'} flex flex-col group">
+            <div class="relative aspect-[4/3] bg-neutral-100 p-4 flex items-center justify-center overflow-hidden cursor-pointer" onclick="openDetailModal(${art.slotId})">
+              <img src="${imgUrl}" alt="${escapeHtml(art.title)}" class="max-w-full max-h-full object-contain shadow-md group-hover:scale-[1.03] transition-transform duration-300 ${isDraft ? 'opacity-70' : ''}">
+              <span class="absolute top-2.5 left-2.5 bg-white/90 text-neutral-700 text-[10px] font-semibold tracking-wider px-2 py-0.5 rounded-md shadow-xs">NO.0${art.slotId + 1}</span>
+              ${isAdmin ? `<span class="absolute top-2.5 right-2.5 text-[10px] font-semibold px-2 py-0.5 rounded-md ${isDraft ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'}">${isDraft ? '下書き' : '公開中'}</span>` : ''}
+            </div>
+            <div class="p-4 flex-1 flex flex-col justify-between">
+              <div>
+                <h3 class="font-semibold text-sm text-neutral-900 line-clamp-1">${escapeHtml(art.title)}</h3>
+                <p class="text-xs text-neutral-500 mt-0.5 line-clamp-1">${escapeHtml(art.artist)} ${art.year ? `(${escapeHtml(art.year)})` : ''}</p>
+              </div>
+              <div class="mt-4 pt-3 border-t border-neutral-100 flex items-center justify-between gap-2">
+                <span class="text-[11px] text-neutral-400 flex items-center gap-1">
+                  <svg class="w-3.5 h-3.5 ${liked ? 'text-rose-500 fill-rose-500' : ''}" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>
+                  ${art.likes || 0}
+                </span>
+                <div class="flex items-center gap-1.5">
+                  <button onclick="openDetailModal(${art.slotId})" class="px-2.5 py-1.5 rounded-lg text-[11px] font-medium bg-neutral-100 hover:bg-neutral-200 text-neutral-800 transition-colors">
+                    詳細
+                  </button>
+                  <button onclick="jumpFromCatalogTo3D(${art.slotId})" class="px-2.5 py-1.5 rounded-lg text-[11px] font-medium bg-neutral-900 hover:bg-neutral-700 text-white transition-colors">
+                    3Dで見る
+                  </button>
+                </div>
+              </div>
+            </div>
+          </article>
+        `;
+      }).join('');
+    }
+
+    function jumpFromCatalogTo3D(slotId) {
+      setViewMode('3d');
+      moveToSlot(slotId);
+    }
+
+    /* ==========================================================================
+       9. 作品詳細モーダル・いいね・コメント・ライトボックス
+    ========================================================================== */
+    function openDetailModal(slotIndex) {
+      const art = artworks[slotIndex];
+      if (!isArtworkVisibleToCurrentUser(art)) return;
+      activeDetailSlot = slotIndex;
+
+      refreshDetailModalData(slotIndex);
+
+      const modal = document.getElementById('detail-modal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+      hideTooltip();
+    }
+
+    function refreshDetailModalData(slotIndex) {
+      const art = artworks[slotIndex];
+      if (!art) return;
+
+      document.getElementById('detail-img').src = getArtworkImageUrl(art);
+      document.getElementById('detail-slot-badge').textContent = SLOTS_CONFIG[slotIndex].label;
+      document.getElementById('detail-title').textContent = art.title;
+      document.getElementById('detail-artist').textContent = art.artist;
+      document.getElementById('detail-year').textContent = art.year ? `制作年: ${art.year}` : '制作年: 不明';
+      document.getElementById('detail-medium').textContent = art.medium || 'ミクストメディア';
+      document.getElementById('detail-frame').textContent = `額装: ${FRAME_LABELS[art.frame] || 'マットブラック'}`;
+      document.getElementById('detail-description').textContent = art.description || '作品解説は登録されていません。';
+
+      // 管理者のみ編集ボタンとステータスバッジを表示
+      const editBtn = document.getElementById('detail-edit-btn');
+      const statusBadge = document.getElementById('detail-status-badge');
+      if (isAdmin) {
+        editBtn.classList.remove('hidden');
+        editBtn.onclick = () => {
+          closeDetailModal();
+          openCurateModal(slotIndex);
+        };
+        statusBadge.classList.remove('hidden');
+        const isDraft = art.published === false;
+        statusBadge.textContent = isDraft ? '下書き（非公開）' : '公開中';
+        statusBadge.className = 'text-[10px] font-semibold px-2 py-0.5 rounded-md ' +
+          (isDraft ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800');
+      } else {
+        editBtn.classList.add('hidden');
+        statusBadge.classList.add('hidden');
+      }
+
+      updateDetailLikeUI(art);
+      renderDetailComments(slotIndex);
+    }
+
+    function closeDetailModal() {
+      const modal = document.getElementById('detail-modal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+      activeDetailSlot = null;
+    }
+
+    function updateDetailLikeUI(art) {
+      const icon = document.getElementById('detail-like-icon');
+      const count = document.getElementById('detail-like-count');
+      const isLiked = sessionLikedSlots.has(art.slotId);
+      count.textContent = art.likes || 0;
+      if (isLiked) {
+        icon.setAttribute('fill', '#f43f5e');
+        icon.classList.remove('text-neutral-400');
+        icon.classList.add('text-rose-500');
+      } else {
+        icon.setAttribute('fill', 'none');
+        icon.classList.add('text-neutral-400');
+        icon.classList.remove('text-rose-500');
+      }
+    }
+
+    async function toggleLikeCurrent() {
+      if (activeDetailSlot === null || !artworks[activeDetailSlot]) return;
+      const slotId = activeDetailSlot;
+      const art = artworks[slotId];
+      const alreadyLiked = sessionLikedSlots.has(slotId);
+      const delta = alreadyLiked ? -1 : 1;
+
+      if (alreadyLiked) sessionLikedSlots.delete(slotId);
+      else sessionLikedSlots.add(slotId);
+
+      // 楽観的UI更新
+      art.likes = Math.max(0, (art.likes || 0) + delta);
+      updateDetailLikeUI(art);
+
+      const icon = document.getElementById('detail-like-icon');
+      icon.classList.remove('animate-heart');
+      void icon.offsetWidth;
+      if (!alreadyLiked) icon.classList.add('animate-heart');
+
+      if (isCloudConnected && firebaseUser && db) {
+        try {
+          await updateDoc(getPublicDocRef('gallery_artworks', `slot_${slotId}`), {
+            likes: increment(delta)
+          });
+        } catch (err) {
+          console.error('いいね更新エラー:', err);
+        }
+      }
+      if (currentViewMode === '2d') renderCatalogGrid();
+    }
+
+    function renderDetailComments(slotIndex) {
+      const list = document.getElementById('detail-comments-list');
+      const comments = allComments.filter(c => c.slotId === slotIndex);
+      document.getElementById('detail-comment-count').textContent = `${comments.length}件`;
+
+      if (comments.length === 0) {
+        list.innerHTML = `<p class="text-xs text-neutral-400 py-2">まだ感想コメントはありません。最初のコメントを残してみましょう。</p>`;
+        return;
+      }
+
+      list.innerHTML = comments.map(c => `
+        <div class="bg-neutral-50 rounded-2xl p-3 border border-neutral-100">
+          <div class="flex items-center justify-between text-[11px] text-neutral-500 mb-1">
+            <span class="font-semibold text-neutral-700">${escapeHtml(c.author || '匿名の鑑賞者')}</span>
+            <div class="flex items-center gap-2">
+              <span>${escapeHtml(c.dateStr || '')}</span>
+              ${isAdmin ? `<button onclick="deleteCommentByAdmin('${escapeHtml(c.id)}')" class="text-rose-500 hover:text-rose-700 font-medium text-[10px] px-1.5 py-0.5 rounded hover:bg-rose-50" title="管理者権限でコメントを削除">削除</button>` : ''}
+            </div>
+          </div>
+          <p class="text-xs text-neutral-700 leading-relaxed whitespace-pre-wrap">${escapeHtml(c.text)}</p>
+        </div>
+      `).join('');
+    }
+
+    async function submitComment(e) {
+      e.preventDefault();
+      if (activeDetailSlot === null || !artworks[activeDetailSlot]) return;
+      const authorInput = document.getElementById('comment-author');
+      const textInput = document.getElementById('comment-text');
+      const text = textInput.value.trim();
+      if (!text) return;
+
+      const now = new Date();
+      const dateStr = `${now.getFullYear()}/${String(now.getMonth() + 1).padStart(2, '0')}/${String(now.getDate()).padStart(2, '0')}`;
+      const newComment = {
+        slotId: activeDetailSlot,
+        author: authorInput.value.trim() || '匿名の鑑賞者',
+        text: text,
+        dateStr: dateStr,
+        createdAt: Date.now()
+      };
+
+      textInput.value = '';
+
+      if (isCloudConnected && firebaseUser && db) {
+        try {
+          await addDoc(getPublicColRef('gallery_comments'), newComment);
+          showToast('感想コメントを投稿しました');
+        } catch (err) {
+          console.error('コメント投稿エラー:', err);
+          showToast('コメントの投稿に失敗しました', 'error');
+        }
+      } else {
+        allComments.unshift({ id: 'local_' + Date.now(), ...newComment });
+        renderDetailComments(activeDetailSlot);
+        showToast('感想コメントを投稿しました');
+      }
+    }
+
+    async function deleteCommentByAdmin(commentId) {
+      if (!isAdmin) return;
+      openConfirmModal(
+        'コメントの削除',
+        'この鑑賞者コメントを削除しますか？全ユーザーの画面から即時削除されます。',
+        async () => {
+          if (isCloudConnected && firebaseUser && db) {
+            try {
+              await deleteDoc(getPublicDocRef('gallery_comments', commentId));
+              showToast('コメントを削除しました');
+            } catch (err) {
+              console.error('コメント削除エラー:', err);
+              showToast('コメントの削除に失敗しました', 'error');
+            }
+          } else {
+            allComments = allComments.filter(c => c.id !== commentId);
+            if (activeDetailSlot !== null) renderDetailComments(activeDetailSlot);
+            showToast('コメントを削除しました');
+          }
+        }
+      );
+    }
+
+    function focusCurrentIn3D() {
+      const slot = activeDetailSlot;
+      closeDetailModal();
+      if (currentViewMode === '2d') setViewMode('3d');
+      if (slot !== null) moveToSlot(slot);
+    }
+
+    function openLightbox() {
+      if (activeDetailSlot === null || !artworks[activeDetailSlot]) return;
+      const art = artworks[activeDetailSlot];
+      document.getElementById('lightbox-img').src = getArtworkImageUrl(art);
+      document.getElementById('lightbox-caption').textContent = `${art.title} — ${art.artist}`;
+      const lb = document.getElementById('lightbox-modal');
+      lb.classList.remove('hidden');
+      lb.classList.add('flex');
+    }
+
+    function closeLightbox() {
+      const lb = document.getElementById('lightbox-modal');
+      lb.classList.add('hidden');
+      lb.classList.remove('flex');
+    }
+
+    /* ==========================================================================
+       10. 管理者専用：作品展示・キュレーション・設定パネル
+    ========================================================================== */
+    function openCurateModal(preselectSlot = null) {
+      if (!isAdmin) {
+        openAdminLoginModal();
+        return;
+      }
+      populateSlotSelect();
+
+      let targetSlot = preselectSlot;
+      if (targetSlot === null) {
+        const emptyIdx = artworks.findIndex(a => !a);
+        targetSlot = emptyIdx !== -1 ? emptyIdx : 0;
+      }
+
+      document.getElementById('input-slot').value = targetSlot;
+      loadSlotIntoForm(targetSlot);
+      loadSettingsIntoForm();
+      switchCurateTab('form');
+      renderManageSlotList();
+
+      const modal = document.getElementById('curate-modal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+      hideTooltip();
+    }
+
+    function closeCurateModal() {
+      const modal = document.getElementById('curate-modal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    function switchCurateTab(tab) {
+      const tabs = ['form', 'manage', 'settings'];
+      tabs.forEach(t => {
+        const panel = document.getElementById(`curate-tab-${t}`);
+        const btn = document.getElementById(`tab-btn-${t}`);
+        if (t === tab) {
+          panel.classList.remove('hidden');
+          btn.className = 'pb-3 border-b-2 border-neutral-900 text-neutral-900 transition-colors whitespace-nowrap';
+        } else {
+          panel.classList.add('hidden');
+          btn.className = 'pb-3 border-b-2 border-transparent text-neutral-400 hover:text-neutral-700 transition-colors whitespace-nowrap';
+        }
+      });
+      if (tab === 'manage') renderManageSlotList();
+      if (tab === 'settings') loadSettingsIntoForm();
+    }
+
+    function updatePublishHint() {
+      const checked = document.getElementById('input-published').checked;
+      document.getElementById('publish-status-hint').textContent = checked
+        ? '公開中：すべての鑑賞者に表示されます'
+        : '下書き（非公開）：管理者のみプレビュー可能です';
+    }
+
+    function populateSlotSelect() {
+      const select = document.getElementById('input-slot');
+      select.innerHTML = SLOTS_CONFIG.map(slot => {
+        const art = artworks[slot.id];
+        const status = art
+          ? (art.published === false ? `［下書き: ${art.title}］` : `［公開中: ${art.title}］`)
+          : '［空き枠］';
+        return `<option value="${slot.id}">${slot.label} ${status}</option>`;
+      }).join('');
+
+      select.onchange = () => loadSlotIntoForm(parseInt(select.value, 10));
+    }
+
+    function loadSlotIntoForm(slotId) {
+      const art = artworks[slotId];
+      pendingUploadDataUrl = null;
+      document.getElementById('image-file-input').value = '';
+
+      const preview = document.getElementById('upload-preview');
+      const placeholder = document.getElementById('upload-placeholder');
+
+      if (art) {
+        document.getElementById('input-title').value = art.title || '';
+        document.getElementById('input-artist').value = art.artist || '';
+        document.getElementById('input-year').value = art.year || '';
+        document.getElementById('input-medium').value = art.medium || '';
+        document.getElementById('input-frame').value = art.frame || 'black';
+        document.getElementById('input-description').value = art.description || '';
+        document.getElementById('input-published').checked = art.published !== false;
+
+        preview.src = getArtworkImageUrl(art);
+        preview.classList.remove('hidden');
+        placeholder.classList.add('hidden');
+      } else {
+        document.getElementById('input-title').value = '';
+        document.getElementById('input-artist').value = '';
+        document.getElementById('input-year').value = new Date().getFullYear().toString();
+        document.getElementById('input-medium').value = '';
+        document.getElementById('input-frame').value = 'black';
+        document.getElementById('input-description').value = '';
+        document.getElementById('input-published').checked = true;
+
+        preview.src = '';
+        preview.classList.add('hidden');
+        placeholder.classList.remove('hidden');
+      }
+      updatePublishHint();
+    }
+
+    function loadSettingsIntoForm() {
+      document.getElementById('setting-title').value = galleryConfig.title;
+      document.getElementById('setting-subtitle').value = galleryConfig.subtitle;
+      document.getElementById('setting-admin-id').value = galleryConfig.adminId;
+      document.getElementById('setting-admin-pw').value = '';
+    }
+
+    function setupUploadDropZone() {
+      const dropZone = document.getElementById('drop-zone');
+      const fileInput = document.getElementById('image-file-input');
+
+      dropZone.addEventListener('click', () => fileInput.click());
+
+      ['dragenter', 'dragover'].forEach(evt => {
+        dropZone.addEventListener(evt, (e) => {
+          e.preventDefault();
+          dropZone.classList.add('border-neutral-900', 'bg-neutral-100');
+        });
+      });
+
+      ['dragleave', 'drop'].forEach(evt => {
+        dropZone.addEventListener(evt, (e) => {
+          e.preventDefault();
+          dropZone.classList.remove('border-neutral-900', 'bg-neutral-100');
+        });
+      });
+
+      dropZone.addEventListener('drop', (e) => {
+        const files = e.dataTransfer.files;
+        if (files && files.length > 0) processImageFile(files[0]);
+      });
+    }
+
+    function handleFileSelect(e) {
+      if (e.target.files && e.target.files[0]) {
+        processImageFile(e.target.files[0]);
+      }
+    }
+
+    // Firestore 1MB制限内に確実に収まるよう Canvas で自動リサイズ＆JPEG圧縮
+    function processImageFile(file) {
+      if (!file.type.startsWith('image/')) {
+        showToast('画像ファイル（JPG, PNG, WebPなど）を選択してください。', 'error');
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const img = new Image();
+        img.onload = () => {
+          const maxDim = 760;
+          let w = img.width;
+          let h = img.height;
+          if (w > maxDim || h > maxDim) {
+            if (w >= h) {
+              h = Math.round((h * maxDim) / w);
+              w = maxDim;
+            } else {
+              w = Math.round((w * maxDim) / h);
+              h = maxDim;
+            }
+          }
+
+          const canvas = document.createElement('canvas');
+          canvas.width = w;
+          canvas.height = h;
+          const ctx = canvas.getContext('2d');
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(0, 0, w, h);
+          ctx.drawImage(img, 0, 0, w, h);
+
+          // 品質を段階調整して約450KB以下に収める安全設計
+          let quality = 0.78;
+          let optimizedDataUrl = canvas.toDataURL('image/jpeg', quality);
+          while (optimizedDataUrl.length > 520000 && quality > 0.35) {
+            quality -= 0.1;
+            optimizedDataUrl = canvas.toDataURL('image/jpeg', quality);
+          }
+
+          pendingUploadDataUrl = { dataUrl: optimizedDataUrl, aspect: w / h };
+
+          const preview = document.getElementById('upload-preview');
+          preview.src = optimizedDataUrl;
+          preview.classList.remove('hidden');
+          document.getElementById('upload-placeholder').classList.add('hidden');
+          showToast('画像をクラウド展示用に最適化しました');
+        };
+        img.src = ev.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    async function saveArtworkForm(e) {
+      e.preventDefault();
+      if (!isAdmin) return;
+      const slotId = parseInt(document.getElementById('input-slot').value, 10);
+      const existing = artworks[slotId];
+
+      if (!existing && !pendingUploadDataUrl) {
+        showToast('作品画像をアップロードしてください。', 'error');
+        return;
+      }
+
+      const btn = document.getElementById('btn-save-artwork');
+      btn.disabled = true;
+      btn.textContent = 'クラウドへ保存中...';
+
+      const updated = {
+        slotId: slotId,
+        title: document.getElementById('input-title').value.trim() || '無題',
+        artist: document.getElementById('input-artist').value.trim() || '作家名未設定',
+        year: document.getElementById('input-year').value.trim(),
+        medium: document.getElementById('input-medium').value.trim() || 'ミクストメディア',
+        frame: document.getElementById('input-frame').value,
+        description: document.getElementById('input-description').value.trim(),
+        published: document.getElementById('input-published').checked,
+        likes: existing ? (existing.likes || 0) : 0,
+        isCustomImage: pendingUploadDataUrl ? true : (existing ? existing.isCustomImage : false),
+        customImage: pendingUploadDataUrl ? pendingUploadDataUrl.dataUrl : (existing ? existing.customImage : null),
+        aspect: pendingUploadDataUrl ? pendingUploadDataUrl.aspect : (existing ? existing.aspect : 0.8),
+        updatedAt: Date.now()
+      };
+
+      try {
+        if (isCloudConnected && firebaseUser && db) {
+          await setDoc(getPublicDocRef('gallery_artworks', `slot_${slotId}`), updated);
+        } else {
+          artworks[slotId] = updated;
+          buildArtworkSlotMesh(slotId);
+          if (currentViewMode === '2d') renderCatalogGrid();
+        }
+        closeCurateModal();
+        if (currentViewMode === '3d') moveToSlot(slotId);
+        showToast(`「${updated.title}」を${updated.published ? '公開' : '下書き保存'}しました`);
+      } catch (err) {
+        console.error('作品保存エラー:', err);
+        showToast('クラウドへの保存に失敗しました。画像サイズを小さくして再試行してください。', 'error');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'クラウドに保存して反映する';
+      }
+    }
+
+    async function saveExhibitionSettings(e) {
+      e.preventDefault();
+      if (!isAdmin) return;
+      const title = document.getElementById('setting-title').value.trim() || 'MUSEUM OF FORMS';
+      const subtitle = document.getElementById('setting-subtitle').value.trim() || 'VIRTUAL EXHIBITION ARCHIVE';
+
+      try {
+        if (isCloudConnected && firebaseUser && db) {
+          await setDoc(getPublicDocRef('gallery_config', 'main'), {
+            title,
+            subtitle,
+            adminId: galleryConfig.adminId,
+            adminPwHash: galleryConfig.adminPwHash,
+            updatedAt: Date.now()
+          }, { merge: true });
+        } else {
+          galleryConfig.title = title;
+          galleryConfig.subtitle = subtitle;
+          applyExhibitionConfigUI();
+        }
+        showToast('展覧会タイトルを更新しました');
+      } catch (err) {
+        console.error('展覧会設定保存エラー:', err);
+        showToast('設定の保存に失敗しました', 'error');
+      }
+    }
+
+    async function saveAdminCredentials(e) {
+      e.preventDefault();
+      if (!isAdmin) return;
+      const newId = document.getElementById('setting-admin-id').value.trim();
+      const newPw = document.getElementById('setting-admin-pw').value;
+      if (newId.length < 3 || newPw.length < 6) {
+        showToast('IDは3文字以上、パスワードは6文字以上で設定してください。', 'error');
+        return;
+      }
+
+      try {
+        const newHash = await sha256Hex(newPw);
+        if (isCloudConnected && firebaseUser && db) {
+          await setDoc(getPublicDocRef('gallery_config', 'main'), {
+            adminId: newId,
+            adminPwHash: newHash,
+            updatedAt: Date.now()
+          }, { merge: true });
+        } else {
+          galleryConfig.adminId = newId;
+          galleryConfig.adminPwHash = newHash;
+        }
+        document.getElementById('setting-admin-pw').value = '';
+        showToast('管理者ID・パスワードを更新しました');
+      } catch (err) {
+        console.error('管理者認証更新エラー:', err);
+        showToast('認証情報の更新に失敗しました', 'error');
+      }
+    }
+
+    function renderManageSlotList() {
+      const container = document.getElementById('manage-slot-list');
+      container.innerHTML = SLOTS_CONFIG.map(slot => {
+        const art = artworks[slot.id];
+        if (!art) {
+          return `
+            <div class="flex items-center justify-between gap-3 p-3 rounded-2xl border border-dashed border-neutral-300 bg-neutral-50/70">
+              <div class="flex items-center gap-3 min-w-0">
+                <div class="w-12 h-12 rounded-xl bg-neutral-200/70 flex items-center justify-center text-[10px] font-semibold text-neutral-500 shrink-0">0${slot.id + 1}</div>
+                <div class="min-w-0">
+                  <p class="text-xs font-medium text-neutral-500">${slot.label}</p>
+                  <p class="text-[11px] text-neutral-400">空きスロット</p>
+                </div>
+              </div>
+              <button onclick="editSlotFromManage(${slot.id})" class="px-3 py-1.5 rounded-xl text-xs font-medium bg-neutral-900 text-white hover:bg-neutral-700 shrink-0">
+                展示する
+              </button>
+            </div>
+          `;
+        }
+        const isDraft = art.published === false;
+        return `
+          <div class="flex items-center justify-between gap-3 p-3 rounded-2xl border ${isDraft ? 'border-amber-200 bg-amber-50/30' : 'border-neutral-200 bg-white'}">
+            <div class="flex items-center gap-3 min-w-0">
+              <img src="${getArtworkImageUrl(art)}" alt="" class="w-12 h-12 rounded-xl object-cover bg-neutral-100 shrink-0 border border-neutral-100 ${isDraft ? 'opacity-65' : ''}">
+              <div class="min-w-0">
+                <div class="flex items-center gap-1.5">
+                  <p class="text-[10px] text-neutral-400 font-medium">${slot.label}</p>
+                  <span class="text-[9px] font-semibold px-1.5 py-0.5 rounded ${isDraft ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'}">${isDraft ? '下書き' : '公開中'}</span>
+                </div>
+                <p class="text-xs font-semibold text-neutral-900 truncate">${escapeHtml(art.title)}</p>
+                <p class="text-[11px] text-neutral-500 truncate">${escapeHtml(art.artist)} ・ ${FRAME_LABELS[art.frame] || ''}</p>
+              </div>
+            </div>
+            <div class="flex items-center gap-1.5 shrink-0">
+              <button onclick="toggleQuickPublish(${slot.id})" class="px-2.5 py-1.5 rounded-xl text-[11px] font-medium ${isDraft ? 'bg-emerald-600 text-white hover:bg-emerald-700' : 'bg-amber-100 text-amber-800 hover:bg-amber-200'}">
+                ${isDraft ? '公開する' : '非公開へ'}
+              </button>
+              <button onclick="editSlotFromManage(${slot.id})" class="px-2.5 py-1.5 rounded-xl text-[11px] font-medium bg-neutral-100 hover:bg-neutral-200 text-neutral-800">
+                編集
+              </button>
+              <button onclick="requestDeleteSlot(${slot.id})" class="px-2.5 py-1.5 rounded-xl text-[11px] font-medium text-rose-600 hover:bg-rose-50">
+                撤去
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    async function toggleQuickPublish(slotId) {
+      if (!isAdmin || !artworks[slotId]) return;
+      const nextState = artworks[slotId].published === false;
+      try {
+        if (isCloudConnected && firebaseUser && db) {
+          await updateDoc(getPublicDocRef('gallery_artworks', `slot_${slotId}`), {
+            published: nextState,
+            updatedAt: Date.now()
+          });
+        } else {
+          artworks[slotId].published = nextState;
+          buildArtworkSlotMesh(slotId);
+          renderManageSlotList();
+        }
+        showToast(`SLOT 0${slotId + 1} を「${nextState ? '公開中' : '下書き（非公開）'}」に変更しました`);
+      } catch (err) {
+        console.error('公開状態切替エラー:', err);
+        showToast('公開状態の変更に失敗しました', 'error');
+      }
+    }
+
+    function editSlotFromManage(slotId) {
+      populateSlotSelect();
+      document.getElementById('input-slot').value = slotId;
+      loadSlotIntoForm(slotId);
+      switchCurateTab('form');
+    }
+
+    function requestDeleteSlot(slotId) {
+      const art = artworks[slotId];
+      if (!isAdmin || !art) return;
+      openConfirmModal(
+        '作品の撤去',
+        `「${art.title}」を SLOT 0${slotId + 1} から撤去しますか？全鑑賞者の画面からも即時非表示になります。`,
+        async () => {
+          try {
+            if (isCloudConnected && firebaseUser && db) {
+              await deleteDoc(getPublicDocRef('gallery_artworks', `slot_${slotId}`));
+            } else {
+              artworks[slotId] = null;
+              buildArtworkSlotMesh(slotId);
+              renderManageSlotList();
+              if (currentViewMode === '2d') renderCatalogGrid();
+            }
+            updateBottomNavUI();
+            showToast(`SLOT 0${slotId + 1} の作品を撤去しました`);
+          } catch (err) {
+            console.error('撤去エラー:', err);
+            showToast('作品の撤去に失敗しました', 'error');
+          }
+        }
+      );
+    }
+
+    function requestResetGallery() {
+      if (!isAdmin) return;
+      openConfirmModal(
+        '展示のリセット',
+        'すべての展示スロットを初期のジェネレーティブアート8点（公開状態）に戻します。よろしいですか？',
+        async () => {
+          const defaults = generateDefaultArtworks();
+          try {
+            if (isCloudConnected && firebaseUser && db) {
+              await Promise.all(defaults.map(art =>
+                setDoc(getPublicDocRef('gallery_artworks', `slot_${art.slotId}`), art)
+              ));
+            } else {
+              artworks = defaults;
+              buildAllArtworkSlots();
+              renderManageSlotList();
+              if (currentViewMode === '2d') renderCatalogGrid();
+            }
+            populateSlotSelect();
+            moveToOverview();
+            showToast('初期の展示状態にリセットしました');
+          } catch (err) {
+            console.error('リセットエラー:', err);
+            showToast('リセットに失敗しました', 'error');
+          }
+        }
+      );
+    }
+
+    /* ==========================================================================
+       11. 共有機能 & 共通UIユーティリティ
+    ========================================================================== */
+    function shareExhibition() {
+      const url = window.location.href;
+      const tempInput = document.createElement('textarea');
+      tempInput.value = url;
+      tempInput.style.position = 'fixed';
+      tempInput.style.opacity = '0';
+      document.body.appendChild(tempInput);
+      tempInput.select();
+      try {
+        document.execCommand('copy');
+        showToast('展覧会のURLをクリップボードにコピーしました');
+      } catch (err) {
+        showToast('URLのコピーに失敗しました。ブラウザのアドレスバーからコピーしてください。', 'error');
+      }
+      document.body.removeChild(tempInput);
+    }
+
+    function openGuideOverlay() {
+      const el = document.getElementById('guide-overlay');
+      el.classList.remove('hidden');
+      el.classList.add('flex');
+    }
+
+    function closeGuideOverlay() {
+      const el = document.getElementById('guide-overlay');
+      el.classList.add('hidden');
+      el.classList.remove('flex');
+    }
+
+    function isAnyModalOpen() {
+      return !document.getElementById('detail-modal').classList.contains('hidden') ||
+             !document.getElementById('curate-modal').classList.contains('hidden') ||
+             !document.getElementById('admin-login-modal').classList.contains('hidden') ||
+             !document.getElementById('guide-overlay').classList.contains('hidden') ||
+             !document.getElementById('confirm-modal').classList.contains('hidden') ||
+             !document.getElementById('lightbox-modal').classList.contains('hidden');
+    }
+
+    let confirmCallback = null;
+    function openConfirmModal(title, message, onConfirm) {
+      document.getElementById('confirm-title').textContent = title;
+      document.getElementById('confirm-message').textContent = message;
+      confirmCallback = onConfirm;
+      const modal = document.getElementById('confirm-modal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function closeConfirmModal() {
+      const modal = document.getElementById('confirm-modal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+      confirmCallback = null;
+    }
+
+    document.getElementById('confirm-ok-btn').addEventListener('click', () => {
+      if (typeof confirmCallback === 'function') confirmCallback();
+      closeConfirmModal();
+    });
+
+    function showToast(message, type = 'info') {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      const bg = type === 'error' ? 'bg-rose-600 text-white' : 'bg-neutral-900 text-white';
+      toast.className = `${bg} text-xs font-medium px-4 py-2.5 rounded-2xl shadow-lg animate-fade-in max-w-xs`;
+      toast.textContent = message;
+      container.appendChild(toast);
+
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transition = 'opacity 0.3s ease';
+        setTimeout(() => toast.remove(), 300);
+      }, 3200);
+    }
+
+    function escapeHtml(str) {
+      return String(str || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    // HTMLのインラインイベントハンドラから呼び出せるようグローバル公開
+    Object.assign(window, {
+      setViewMode,
+      setGalleryTheme,
+      shareExhibition,
+      openAdminLoginModal,
+      closeAdminLoginModal,
+      handleAdminLogin,
+      logoutAdmin,
+      openCurateModal,
+      closeCurateModal,
+      switchCurateTab,
+      updatePublishHint,
+      handleFileSelect,
+      saveArtworkForm,
+      saveExhibitionSettings,
+      saveAdminCredentials,
+      toggleQuickPublish,
+      editSlotFromManage,
+      requestDeleteSlot,
+      requestResetGallery,
+      navigateArtwork,
+      moveToOverview,
+      openCurrentFocusedArtwork,
+      openDetailModal,
+      closeDetailModal,
+      toggleLikeCurrent,
+      submitComment,
+      deleteCommentByAdmin,
+      focusCurrentIn3D,
+      openLightbox,
+      closeLightbox,
+      jumpFromCatalogTo3D,
+      openGuideOverlay,
+      closeGuideOverlay,
+      closeConfirmModal
+    });
+
+    /* ==========================================================================
+       12. アプリケーション起動 (window.onload)
+    ========================================================================== */
+    window.onload = async function () {
+      try {
+        setupUploadDropZone();
+        initThreeJS();
+        updateAdminRoleUI();
+        updateBottomNavUI();
+        animate();
+        await initFirebaseAndSync();
+      } catch (err) {
+        console.error('初期化エラー:', err);
+        hideCloudLoading();
+        showToast('3Dギャラリーの初期化中にエラーが発生しました。', 'error');
+      }
+    };
+  </script>
+</body>
+</html>
+```
+
+Firebaseの認証タイムアウト保護と、Firebase Console側で「匿名認証」や「Firestoreルール」が未設定の状態で開いた場合でもローカル展示モードへスムーズに切り替わるよう修正しました。
+
+なお、Firebase（`virtual-gallery-7ef41`）とクラウド同期を完了させるには、Firebase Console 側で以下2つの設定が必要になります：
+1. **Authentication ＞ Sign-in method** で **「匿名」を有効化**
+2. **Firestore Database ＞ ルール** に手順書（`setup_guide.md`）のセキュリティルールを貼り付けて **「公開」**
+
+もしコンソール画面に表示されている具体的なエラーメッセージ（スクリーンショットや文面）があれば共有していただければ、ピンポイントで原因を確認します！
